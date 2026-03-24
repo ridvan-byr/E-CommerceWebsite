@@ -49,8 +49,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
+    if (pathname === href) return true;
+    if (href === "/categories" && pathname.startsWith("/categories/") && !pathname.startsWith("/categories/create")) return true;
+    if (href === "/products" && pathname.startsWith("/products/") && !pathname.startsWith("/products/create") && !pathname.startsWith("/products/search")) return true;
+    return false;
   };
 
   return (
@@ -72,7 +74,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </div>
             <div className="min-w-0">
               <span className="text-white font-bold text-lg tracking-tight whitespace-nowrap">
-                ShopAdmin
+                GelAl.com
               </span>
               <div className="flex items-center gap-1 mt-0.5">
                 <Sparkles size={10} className="text-indigo-400" />
@@ -185,7 +187,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               Admin Kullanıcı
             </p>
             <p className="text-slate-500 text-xs truncate whitespace-nowrap">
-              admin@shopadmin.com
+              admin@eticaret.com
             </p>
           </div>
         </div>

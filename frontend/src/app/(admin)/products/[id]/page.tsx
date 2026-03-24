@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
-  ArrowLeft, Package, DollarSign, Image, Tag, CheckCircle,
-  Plus, X, Layers, GripVertical, Pencil, Check,
+  ArrowLeft, Package, DollarSign, Image, CheckCircle, AlertCircle,
+  Plus, X, Layers, Tag, GripVertical, Pencil, Check,
 } from "lucide-react";
-import { categories } from "@/lib/mockData";
+import { products, categories } from "@/lib/mockData";
 
 interface Feature {
   id: number;
@@ -15,8 +14,11 @@ interface Feature {
   value: string;
 }
 
-export default function ProductCreatePage() {
+export default function ProductEditPage() {
   const router = useRouter();
+  const params = useParams();
+  const productId = Number(params.id);
+
   const [form, setForm] = useState({
     name: "", description: "", price: "", discountPrice: "",
     stock: "", categoryId: "", sku: "", image: "", status: "active",
@@ -28,8 +30,57 @@ export default function ProductCreatePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      const hasDiscount = product.isDiscount && !!product.originalPrice;
+      setForm({
+        name: product.name,
+        description: product.description,
+        price: hasDiscount ? product.originalPrice!.toString() : product.price.toString(),
+        discountPrice: hasDiscount ? product.price.toString() : "",
+        stock: product.stock.toString(),
+        categoryId: product.categoryId.toString(),
+        sku: product.sku,
+        image: product.image,
+        status: product.status,
+        isDiscount: hasDiscount,
+      });
+      if (product.features) {
+        setFeatures(product.features.map((f, i) => ({ id: i + 1, ...f })));
+      }
+    } else {
+      setNotFound(true);
+    }
+  }, [productId]);
 
   const set = (key: string, value: string | boolean) => setForm((f) => ({ ...f, [key]: value }));
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "Ürün adı zorunludur.";
+    if (!form.description.trim()) e.description = "Açıklama zorunludur.";
+    if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) e.price = "Geçerli bir fiyat giriniz.";
+    if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = "Geçerli bir stok miktarı giriniz.";
+    if (!form.categoryId) e.categoryId = "Kategori seçimi zorunludur.";
+    if (!form.sku.trim()) e.sku = "SKU kodu zorunludur.";
+    return e;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs = validate();
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    setLoading(false);
+    setSuccess(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    router.push("/products");
+  };
 
   const [editingFeatureId, setEditingFeatureId] = useState<number | null>(null);
   const [editFeatureName, setEditFeatureName] = useState("");
@@ -92,47 +143,55 @@ export default function ProductCreatePage() {
     setDragOverIndex(null);
   };
 
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Ürün adı zorunludur.";
-    if (!form.description.trim()) e.description = "Açıklama zorunludur.";
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) e.price = "Geçerli bir fiyat giriniz.";
-    if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = "Geçerli bir stok miktarı giriniz.";
-    if (!form.categoryId) e.categoryId = "Kategori seçimi zorunludur.";
-    if (!form.sku.trim()) e.sku = "SKU kodu zorunludur.";
-    return e;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errs = validate();
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSuccess(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    router.push("/products");
-  };
-
   const inputClass = (field: string) =>
     `w-full h-11 px-4 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors[field] ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`;
 
+  if (notFound) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
+          <ArrowLeft size={16} />
+          Geri Dön
+        </button>
+        <div className="flex flex-col items-center gap-4 py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
+            <AlertCircle size={24} className="text-red-500" />
+          </div>
+          <h2 className="text-slate-900 font-bold text-lg">Ürün Bulunamadı</h2>
+          <p className="text-slate-500 text-sm">ID: #{productId} ile eşleşen bir ürün bulunamadı.</p>
+          <button onClick={() => router.back()} className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-all inline-flex items-center">
+            Geri Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <Link href="/products" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
-        <ArrowLeft size={16} /> Ürünlere Dön
-      </Link>
+      <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
+        <ArrowLeft size={16} /> Geri Dön
+      </button>
 
       {success && (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
           <CheckCircle size={20} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-emerald-700 text-sm font-medium">Ürün başarıyla oluşturuldu! Yönlendiriliyorsunuz...</p>
+          <p className="text-emerald-700 text-sm font-medium">Ürün başarıyla güncellendi! Yönlendiriliyorsunuz...</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+          <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center">
+            <Package size={17} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-indigo-900 font-semibold text-sm">Ürün Düzenleniyor</h2>
+            <p className="text-indigo-600 text-xs">ID: #{productId} &bull; SKU: {form.sku}</p>
+          </div>
+        </div>
+
         {/* Basic Info */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -141,7 +200,7 @@ export default function ProductCreatePage() {
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Temel Bilgiler</h2>
-              <p className="text-slate-400 text-xs">Ürünün temel bilgilerini girin</p>
+              <p className="text-slate-400 text-xs">Ürünün temel bilgilerini düzenleyin</p>
             </div>
           </div>
 
@@ -193,7 +252,7 @@ export default function ProductCreatePage() {
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Fiyat & Stok</h2>
-              <p className="text-slate-400 text-xs">Ürün fiyatı ve stok bilgileri</p>
+              <p className="text-slate-400 text-xs">Ürün fiyatı ve stok bilgilerini düzenleyin</p>
             </div>
           </div>
 
@@ -394,7 +453,7 @@ export default function ProductCreatePage() {
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Görsel & Durum</h2>
-              <p className="text-slate-400 text-xs">Ürün görseli ve yayın durumu</p>
+              <p className="text-slate-400 text-xs">Ürün görseli ve yayın durumunu düzenleyin</p>
             </div>
           </div>
 
@@ -438,13 +497,13 @@ export default function ProductCreatePage() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Link href="/products" className="flex-1 h-11 flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">İptal</Link>
+          <button type="button" onClick={() => router.back()} className="flex-1 h-11 flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">İptal</button>
           <button
             type="submit"
             disabled={loading || success}
             className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2"
           >
-            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Ürün Oluştur"}
+            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Değişiklikleri Kaydet"}
           </button>
         </div>
       </form>

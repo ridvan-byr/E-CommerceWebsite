@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Edit2, Trash2, Package, SlidersHorizontal, Star } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Package, SlidersHorizontal, Star, Eye } from "lucide-react";
 import { products as initialProducts, categories } from "@/lib/mockData";
 
 const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
@@ -143,7 +143,7 @@ export default function ProductsPage() {
                       <td className="px-4 py-4">
                         <div>
                           <span className="text-slate-900 text-sm font-bold">₺{product.price.toLocaleString("tr-TR")}</span>
-                          {product.originalPrice && (
+                          {product.isDiscount && product.originalPrice && (
                             <p className="text-slate-400 text-xs line-through">₺{product.originalPrice.toLocaleString("tr-TR")}</p>
                           )}
                         </div>
@@ -168,6 +168,13 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/products/${product.id}/preview`}
+                            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-sky-50 hover:text-sky-600 border border-slate-200 hover:border-sky-200 text-xs font-medium transition-all"
+                          >
+                            <Eye size={13} />
+                            Görüntüle
+                          </Link>
                           <Link
                             href={`/products/${product.id}`}
                             className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 text-xs font-medium transition-all"

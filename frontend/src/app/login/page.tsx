@@ -42,7 +42,7 @@ export default function LoginPage() {
             <ShoppingCart size={22} className="text-white" />
           </div>
           <div>
-            <span className="text-white font-bold text-xl tracking-tight">ShopAdmin</span>
+            <span className="text-white font-bold text-xl tracking-tight">E-Ticaret</span>
             <div className="flex items-center gap-1">
               <Sparkles size={10} className="text-indigo-400" />
               <span className="text-indigo-400 text-xs">E-Ticaret Yönetim Paneli</span>
@@ -107,7 +107,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
               <ShoppingCart size={20} className="text-white" />
             </div>
-            <span className="text-slate-900 font-bold text-xl">ShopAdmin</span>
+            <span className="text-slate-900 font-bold text-xl">E-Ticaret</span>
           </div>
 
           <div className="mb-8">

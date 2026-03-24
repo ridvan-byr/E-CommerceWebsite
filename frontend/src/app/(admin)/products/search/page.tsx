@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, SlidersHorizontal, Grid3X3, List, Star, Edit2, X, Package } from "lucide-react";
+import { Search, SlidersHorizontal, Grid3X3, List, Star, Edit2, X, Package, Eye } from "lucide-react";
 import { products, categories } from "@/lib/mockData";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -176,7 +176,7 @@ export default function ProductSearchPage() {
                   <span className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full ${status.className}`}>
                     {status.label}
                   </span>
-                  {product.originalPrice && (
+                  {product.isDiscount && product.originalPrice && (
                     <span className="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full bg-red-500 text-white">
                       -%{Math.round((1 - product.price / product.originalPrice) * 100)}
                     </span>
@@ -193,14 +193,22 @@ export default function ProductSearchPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-slate-900 font-bold text-base">₺{product.price.toLocaleString("tr-TR")}</span>
-                      {product.originalPrice && <p className="text-slate-400 text-xs line-through">₺{product.originalPrice.toLocaleString("tr-TR")}</p>}
+                      {product.isDiscount && product.originalPrice && <p className="text-slate-400 text-xs line-through">₺{product.originalPrice.toLocaleString("tr-TR")}</p>}
                     </div>
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="flex items-center gap-1 h-8 px-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-semibold transition-all"
-                    >
-                      <Edit2 size={12} /> Düzenle
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/products/${product.id}/preview`}
+                        className="flex items-center gap-1 h-8 px-3 rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 text-xs font-semibold transition-all"
+                      >
+                        <Eye size={12} />
+                      </Link>
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="flex items-center gap-1 h-8 px-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-semibold transition-all"
+                      >
+                        <Edit2 size={12} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -228,9 +236,14 @@ export default function ProductSearchPage() {
                     <p className="text-slate-900 font-bold text-sm">₺{product.price.toLocaleString("tr-TR")}</p>
                     <p className="text-slate-400 text-xs">Stok: {product.stock}</p>
                   </div>
-                  <Link href={`/products/${product.id}`} className="flex items-center gap-1.5 h-8 px-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-xs font-medium transition-all ml-2">
-                    <Edit2 size={13} /> Düzenle
-                  </Link>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <Link href={`/products/${product.id}/preview`} className="flex items-center gap-1 h-8 px-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 text-xs font-medium transition-all">
+                      <Eye size={13} />
+                    </Link>
+                    <Link href={`/products/${product.id}`} className="flex items-center gap-1.5 h-8 px-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-xs font-medium transition-all">
+                      <Edit2 size={13} />
+                    </Link>
+                  </div>
                 </div>
               );
             })}
