@@ -6,13 +6,9 @@ public class CreateCategoryDto
 {
     [Required(ErrorMessage = "Kategori adı zorunludur.")]
     [MinLength(2, ErrorMessage = "Kategori adı en az 2 karakter olmalıdır.")]
-    [MaxLength(100)]
+    [MaxLength(100, ErrorMessage = "Kategori adı en fazla 100 karakter olmalıdır.")]
     public string Name { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Açıklama zorunludur.")]
-    [MaxLength(500)]
-    public string Description { get; set; } = string.Empty;
-
-    [MaxLength(500)]
+    [MaxLength(2000, ErrorMessage = "Açıklama en fazla 2000 karakter olmalıdır.")]
+    public string? Description { get; set; }
     public string? ImageUrl { get; set; }
 }

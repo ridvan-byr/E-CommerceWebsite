@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using backend.Data;
 using backend.DTOs;
-using backend.Models;
+using backend.Services;
 
 namespace backend.Controllers;
 
@@ -10,21 +8,29 @@ namespace backend.Controllers;
 [Route("api/categories")]
 public class CategoryController : ControllerBase
 {
-    private readonly DataContext _context;
+    private readonly ICategoryService _categoryService;
 
-    public CategoryController(DataContext context)
+    public CategoryController(ICategoryService categoryService)
     {
-        _context = context;
+        _categoryService = categoryService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetCategoryList()
+    {
+        var list = await _categoryService.GetAllAsync();
+        return Ok(list);
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetCategory(int id)
     {
-        var category = await _context.Categories.FindAsync(id);
-        if (category == null || category.IsDeleted)
+        var category = await _categoryService.GetByIdAsync(id);
+        if (category is null)
         {
             return NotFound();
         }
+
         return Ok(category);
     }
 
@@ -35,17 +41,37 @@ public class CategoryController : ControllerBase
         {
             return BadRequest(ModelState);
         }
-        var category = new Category
+
+        var result = await _categoryService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetCategory), new { id = result.CategoryId }, result);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryDto dto)
+    {
+        if (!ModelState.IsValid)
         {
-            Name = dto.Name,
-            Description = dto.Description,
-            ImageUrl = dto.ImageUrl,
-            CreatedBy = "System",
-            CreatedAt = DateTime.UtcNow,
-            IsDeleted = false,
-        };
-        await _context.Categories.AddAsync(category);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetCategory), new { id = category.CategoryId }, category);
+            return BadRequest(ModelState);
+        }
+
+        var result = await _categoryService.UpdateAsync(id, dto);
+        if (result is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteCategory(int id)
+    {
+        var deleted = await _categoryService.SoftDeleteAsync(id);
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }

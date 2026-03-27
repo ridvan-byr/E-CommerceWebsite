@@ -40,5 +40,5 @@ public class CreateProductDto
     [MaxLength(500, ErrorMessage = "Resim URL en fazla 500 karakter olmalıdır.")]
     public string? ImageUrl { get; set; }
 
-    public List<CreateProductFeatureDto> Features { get; set; } = new List<CreateProductFeatureDto>();
+    // public List<CreateProductFeatureDto> Features { get; set; } = new List<CreateProductFeatureDto>();
 }

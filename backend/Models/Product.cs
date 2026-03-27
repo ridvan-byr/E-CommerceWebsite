@@ -6,15 +6,14 @@ public class Product
     public int CategoryId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string Sku { get; set; } = string.Empty;
+    public string? Sku { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public decimal? OriginalPrice { get; set; }
     public bool IsDiscount { get; set; }
     public int Stock { get; set; }
-    /// <summary>active, inactive veya draft (CHECK ile veritabanında doğrulanır).</summary>
     public string Status { get; set; } = "active";
     public string? ImageUrl { get; set; }
-    public bool IsDeleted { get; set; }
+    public bool IsDeleted { get; set; } = false;
     public string? CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
     public string? UpdatedBy { get; set; }
