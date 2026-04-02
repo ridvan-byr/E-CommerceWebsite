@@ -14,232 +14,92 @@ public class ProductRepository : IProductRepository
         _context = context;
     }
 
-    public async Task<PagedResult<ProductResponseDto>> GetAllAsync(int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
-    {
-    var filter = new ProductListFilter { Page = page, PageSize = pageSize };
-    return await SearchProductAsync(filter, cancellationToken);
-    }
-
-    public async Task<ProductResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-    {
-
-        return await _context.Products
-        .AsNoTracking()
-        .Where(c => c.ProductId == id && !c.IsDeleted)
-        .Select(c => new ProductResponseDto
-        {
-            ProductId = c.ProductId,
-            CategoryId = c.CategoryId,
-            Name = c.Name,
-            Description = c.Description,
-            Sku = c.Sku,
-            Barcode = c.Barcode,
-            Price = c.Price,
-            OriginalPrice = c.OriginalPrice,
-            IsDiscount = c.IsDiscount,
-            Stock = c.Stock,
-            Status = c.Status,
-            ImageUrl = c.ImageUrl,
-            IsDeleted = c.IsDeleted,
-            CreatedBy = c.CreatedBy,
-            CreatedAt = c.CreatedAt,
-            UpdatedBy = c.UpdatedBy,
-            UpdatedAt = c.UpdatedAt
-        }).FirstOrDefaultAsync(cancellationToken);
-        
-    }
-    
-    public async Task<ProductResponseDto?> CreateAsync(CreateProductDto dto, CancellationToken cancellationToken = default)
-    {
-        var categoryExists = await _context.Categories.AsNoTracking()
-            .AnyAsync(c => c.CategoryId == dto.CategoryId && !c.IsDeleted, cancellationToken);
-        if (!categoryExists)
-        {
-            return null;
-        }
-        
-        var normalizedBarcode = NormalizeBarcode(dto.Barcode);
-
-        if(normalizedBarcode is not null)
-        {
-            var barcodeTaken = await _context.Products
+    public Task<Product?> GetActiveByIdAsync(int id, CancellationToken cancellationToken = default) =>
+        _context.Products
             .AsNoTracking()
-            .AnyAsync(p => p.Barcode == normalizedBarcode,cancellationToken);
-            if(barcodeTaken)
-              return null;
-        }
+            .FirstOrDefaultAsync(c => c.ProductId == id && !c.IsDeleted, cancellationToken);
 
-         var product = new Product
-         {
-            CategoryId = dto.CategoryId,
-            Name = dto.Name,
-            Description = dto.Description,
-            Sku = "TMP-" + Guid.NewGuid().ToString("N"),
-            Barcode = normalizedBarcode,
-            Price = dto.Price,
-            OriginalPrice = dto.OriginalPrice,
-            IsDiscount = dto.IsDiscount,
-            Stock = dto.Stock,
-            Status = dto.Status,
-            ImageUrl = dto.ImageUrl,
-            IsDeleted = false,
-            CreatedBy = "System",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedBy = null,
-            UpdatedAt = null
-         };
-
-         _context.Products.Add(product);
-         await _context.SaveChangesAsync(cancellationToken);
-         
-         product.Sku = $"PRD-{product.ProductId:D7}";
-         await _context.SaveChangesAsync(cancellationToken);
-         return new ProductResponseDto
-         {
-            ProductId = product.ProductId,
-            CategoryId = dto.CategoryId,
-            Name = dto.Name,
-            Description = dto.Description,
-            Sku = product.Sku,
-            Barcode = product.Barcode,
-            Price = dto.Price,
-            OriginalPrice = dto.OriginalPrice,
-            IsDiscount = dto.IsDiscount,
-            Stock = dto.Stock,
-            Status = dto.Status,
-            ImageUrl = dto.ImageUrl
-         };
-    }
-
-    public async Task<ProductResponseDto?> UpdateAsync(int id,UpdateProductDto dto, CancellationToken cancellationToken = default)
+    public async Task<Product?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var product = await _context.Products.FindAsync(new object[] { id }, cancellationToken);
-
-        if(product is null || product.IsDeleted)
-        {
+        if (product is null || product.IsDeleted)
             return null;
-        }
-
-        product.Name = dto.Name;
-        product.Description = dto.Description;
-        product.ImageUrl = dto.ImageUrl;
-        
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return await GetByIdAsync(id, cancellationToken);
-
+        return product;
     }
 
-    public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
+    public Task<bool> CategoryExistsActiveAsync(int categoryId, CancellationToken cancellationToken = default) =>
+        _context.Categories.AsNoTracking()
+            .AnyAsync(c => c.CategoryId == categoryId && !c.IsDeleted, cancellationToken);
+
+    public Task<bool> IsBarcodeTakenAsync(string barcode, int? excludeProductId, CancellationToken cancellationToken = default)
     {
-        var products = await _context.Products.FindAsync(new object[] { id }, cancellationToken);
-        
-        if(products is null || products.IsDeleted)
-        {
-            return true;
-        }
-        products.IsDeleted = true;
-        products.UpdatedAt = DateTime.UtcNow;
-        products.UpdatedBy = "System";
-         
-        await _context.SaveChangesAsync(cancellationToken);
-        return true;
+        var q = _context.Products
+            .AsNoTracking()
+            .Where(c => c.Barcode == barcode);
+
+        if (excludeProductId is int x)
+            q = q.Where(p => p.ProductId != x);
+
+        return q.AnyAsync(cancellationToken);
     }
 
-    public async Task<PagedResult<ProductResponseDto>> SearchProductAsync(ProductListFilter f, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
+    {
+        await _context.Products.AddAsync(product, cancellationToken);
+    }
+
+    public Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
+    {
+        _context.Products.Update(product);
+        return Task.CompletedTask;
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
+        _context.SaveChangesAsync(cancellationToken);
+
+    public async Task<(IReadOnlyList<Product> Items, int TotalCount)> SearchAsync(
+        ProductListFilter f,
+        CancellationToken cancellationToken = default)
     {
         var query = _context.Products
-        .AsNoTracking()
-        .Where(c => !c.IsDeleted);
+            .AsNoTracking()
+            .Where(c => !c.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(f.Search))
         {
             var s = f.Search.Trim();
-
             query = query.Where(p =>
-                p.Name.Contains(s) ||
-                (p.Sku != null && p.Sku.Contains(s)) ||
-                (p.Barcode != null && p.Barcode.Contains(s)) ||
-                (p.Description != null && p.Description.Contains(s)));
-
+                p.Name.Contains(s)
+                || (p.Sku != null && p.Sku.Contains(s))
+                || (p.Description != null && p.Description.Contains(s)));
         }
 
-        if(f.CategoryId is int cid)
-            {
-                query = query.Where(p => p.CategoryId == cid);
-            }
+        if (f.CategoryId is int cid)
+            query = query.Where(p => p.CategoryId == cid);
 
         if (!string.IsNullOrWhiteSpace(f.Status))
-        {
             query = query.Where(p => p.Status == f.Status);
-        }
 
-        if(f.MinPrice is decimal minP)
-        {
+        if (f.MinPrice is decimal minP)
             query = query.Where(p => p.Price >= minP);
-        }
 
-        if(f.MaxPrice is decimal maxP)
-        {
+        if (f.MaxPrice is decimal maxP)
             query = query.Where(p => p.Price <= maxP);
-        }
 
-        if(f.MinStock is int minS)
-        {
+        if (f.MinStock is int minS)
             query = query.Where(p => p.Stock >= minS);
-        }
-        
 
         var total = await query.CountAsync(cancellationToken);
 
-        var page = Math.Max(1,f.Page);
-        var size = Math.Clamp(f.PageSize,1,100);
-        
+        var page = Math.Max(1, f.Page);
+        var size = Math.Clamp(f.PageSize, 1, 100);
+
         var items = await query
-        .OrderBy(p => p.Name)
-        .Skip((page - 1) * size)
-        .Take(size)
-        .Select(p => new ProductResponseDto
-        {
-            ProductId = p.ProductId,
-            CategoryId = p.CategoryId,
-            Name = p.Name,
-            Description = p.Description,
-            Sku = p.Sku,
-            Barcode = p.Barcode,
-            Price = p.Price,
-            OriginalPrice = p.OriginalPrice,
-            IsDiscount = p.IsDiscount,
-            Stock = p.Stock,
-            Status = p.Status,
-            ImageUrl = p.ImageUrl,
-            IsDeleted = p.IsDeleted,
-            CreatedBy = p.CreatedBy,
-            CreatedAt = p.CreatedAt,
-            UpdatedBy = p.UpdatedBy,
-            UpdatedAt = p.UpdatedAt,
-        })
-        .ToListAsync(cancellationToken);
-        
-        return new PagedResult<ProductResponseDto>
-        {
-        Items = items,
-        TotalCount = total,
-        Page = page,
-        PageSize = size,
-        };
+            .OrderBy(p => p.Name)
+            .Skip((page - 1) * size)
+            .Take(size)
+            .ToListAsync(cancellationToken);
 
+        return (items, total);
     }
-    
-    private static string? NormalizeBarcode(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        return value.Trim();
-    }
-
 }
-
