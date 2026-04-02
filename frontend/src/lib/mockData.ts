@@ -31,6 +31,8 @@ export interface Product {
   rating: number;
   reviewCount: number;
   sku: string;
+  /** İsteğe bağlı; 8–14 haneli rakam (EAN vb.) */
+  barcode?: string;
   features?: ProductFeature[];
   isDeleted: boolean;
   createdBy?: string;
@@ -118,6 +120,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviewCount: 324,
     sku: "APL-IP15PM-256",
+    barcode: "5901234123457",
     features: [
       { name: "Renk", value: "Titanium Siyah" },
       { name: "Depolama", value: "256 GB" },
@@ -142,6 +145,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviewCount: 218,
     sku: "SAM-GS24U-512",
+    barcode: "8806095001234",
     features: [
       { name: "Renk", value: "Titanium Gri" },
       { name: "Depolama", value: "512 GB" },
@@ -165,6 +169,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviewCount: 567,
     sku: "NIKE-AM270-42",
+    barcode: "1945007812345",
     features: [
       { name: "Renk", value: "Kırmızı/Beyaz" },
       { name: "Numara", value: "42" },
@@ -188,6 +193,7 @@ export const products: Product[] = [
     rating: 4.9,
     reviewCount: 145,
     sku: "APL-MBP14-M3",
+    barcode: "0190199101234",
     features: [
       { name: "Renk", value: "Uzay Grisi" },
       { name: "RAM", value: "18 GB" },
@@ -212,6 +218,7 @@ export const products: Product[] = [
     rating: 4.5,
     reviewCount: 892,
     sku: "LEV-501-32-32",
+    barcode: "5400587123456",
     features: [
       { name: "Renk", value: "Mavi" },
       { name: "Beden", value: "32/32" },
@@ -235,6 +242,7 @@ export const products: Product[] = [
     rating: 4.4,
     reviewCount: 234,
     sku: "IKEA-KAL-4X4",
+    barcode: "5012345678901",
     features: [
       { name: "Renk", value: "Beyaz" },
       { name: "Boyut", value: "147x147 cm" },
@@ -259,6 +267,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviewCount: 445,
     sku: "SONY-WH1000XM5",
+    barcode: "4548736112345",
     features: [
       { name: "Renk", value: "Siyah" },
       { name: "Bağlantı", value: "Bluetooth 5.3" },
@@ -282,6 +291,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviewCount: 312,
     sku: "ADI-UB23-44",
+    barcode: "4062051234567",
     features: [
       { name: "Renk", value: "Siyah/Beyaz" },
       { name: "Numara", value: "44" },
@@ -304,6 +314,7 @@ export const products: Product[] = [
     rating: 4.9,
     reviewCount: 1243,
     sku: "KIT-ATOM-ALI",
+    barcode: "9786051145678",
     features: [
       { name: "Yazar", value: "James Clear" },
       { name: "Sayfa Sayısı", value: "320" },
@@ -327,6 +338,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviewCount: 178,
     sku: "DYS-V15-DET",
+    barcode: "5025155012345",
     features: [
       { name: "Renk", value: "Altın/Nikel" },
       { name: "Ağırlık", value: "3.1 kg" },

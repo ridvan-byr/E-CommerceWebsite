@@ -111,6 +111,9 @@ export default function ProductPreviewPage() {
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <p className="text-slate-400 text-xs font-medium mb-1">SKU: {product.sku}</p>
+                {product.barcode && (
+                  <p className="text-slate-500 text-xs font-mono mb-1">Barkod: {product.barcode}</p>
+                )}
                 <h1 className="text-slate-900 text-2xl font-bold leading-tight">{product.name}</h1>
               </div>
             </div>

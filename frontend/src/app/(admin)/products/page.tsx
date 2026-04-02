@@ -19,7 +19,11 @@ export default function ProductsPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const filtered = products.filter((p) => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchSearch =
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      (p.barcode?.toLowerCase().includes(q) ?? false);
     const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
     const matchStatus = selectedStatus === "all" || p.status === selectedStatus;
     return matchSearch && matchCategory && matchStatus;
@@ -38,7 +42,7 @@ export default function ProductsPage() {
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Ürün adı veya SKU ara..."
+            placeholder="Ürün adı, SKU veya barkod ara..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -133,7 +137,11 @@ export default function ProductsPage() {
                           <img src={product.image} alt={product.name} className="w-12 h-12 rounded-xl object-cover bg-slate-100 flex-shrink-0" />
                           <div>
                             <p className="text-slate-900 text-sm font-semibold">{product.name}</p>
-                            <p className="text-slate-400 text-xs">{product.sku}</p>
+                            <p className="text-slate-400 text-xs">
+                              {product.sku}
+                              {product.barcode ? <span className="text-slate-300"> · </span> : null}
+                              {product.barcode ? <span className="font-mono">{product.barcode}</span> : null}
+                            </p>
                           </div>
                         </div>
                       </td>

@@ -19,7 +19,7 @@ export default function ProductCreatePage() {
   const router = useRouter();
   const [form, setForm] = useState({
     name: "", description: "", price: "", discountPrice: "",
-    stock: "", categoryId: "", sku: "", image: "", status: "active",
+    stock: "", categoryId: "", sku: "", barcode: "", image: "", status: "active",
     isDiscount: false,
   });
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -100,6 +100,10 @@ export default function ProductCreatePage() {
     if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = "Geçerli bir stok miktarı giriniz.";
     if (!form.categoryId) e.categoryId = "Kategori seçimi zorunludur.";
     if (!form.sku.trim()) e.sku = "SKU kodu zorunludur.";
+    const bc = form.barcode.trim();
+    if (bc && !/^[0-9]{8,14}$/.test(bc)) {
+      e.barcode = "Barkod boş bırakılabilir veya 8–14 haneli rakam olmalıdır.";
+    }
     return e;
   };
 
@@ -168,6 +172,22 @@ export default function ProductCreatePage() {
               <label className="block text-slate-700 text-sm font-medium mb-2">SKU Kodu <span className="text-red-500">*</span></label>
               <input type="text" value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="Örn: APL-IP15-256" className={inputClass("sku")} />
               {errors.sku && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.sku}</p>}
+            </div>
+
+            <div>
+              <label className="block text-slate-700 text-sm font-medium mb-2">Barkod <span className="text-slate-400 font-normal">(isteğe bağlı)</span></label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={form.barcode}
+                onChange={(e) => set("barcode", e.target.value.replace(/\D/g, ""))}
+                placeholder="8–14 haneli rakam (EAN vb.)"
+                maxLength={14}
+                className={inputClass("barcode")}
+              />
+              <p className="text-slate-400 text-xs mt-1">Boş bırakılabilir; POS / raf için benzersiz olmalıdır.</p>
+              {errors.barcode && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.barcode}</p>}
             </div>
 
             <div>

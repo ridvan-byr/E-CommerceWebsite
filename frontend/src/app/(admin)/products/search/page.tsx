@@ -25,7 +25,13 @@ export default function ProductSearchPage() {
   const results = useMemo(() => {
     let filtered = products.filter((p) => {
       const q = query.toLowerCase();
-      const matchQuery = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+      const matchQuery =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        (p.barcode?.includes(q) ?? false) ||
+        p.description.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q);
       const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
       const matchStatus = selectedStatus === "all" || p.status === selectedStatus;
       const matchMin = !minPrice || p.price >= Number(minPrice);
@@ -66,7 +72,7 @@ export default function ProductSearchPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ürün adı, SKU veya açıklama ile ara..."
+              placeholder="Ürün adı, SKU, barkod veya açıklama ile ara..."
               autoFocus
               className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
@@ -184,6 +190,11 @@ export default function ProductSearchPage() {
                 </div>
                 <div className="p-4">
                   <p className="text-slate-500 text-xs mb-1">{product.category}</p>
+                  {product.barcode && (
+                    <p className="text-slate-400 text-[10px] font-mono mb-1 truncate" title={product.barcode}>
+                      {product.barcode}
+                    </p>
+                  )}
                   <h3 className="text-slate-900 font-semibold text-sm leading-tight mb-2 line-clamp-1">{product.name}</h3>
                   <div className="flex items-center gap-1 mb-3">
                     <Star size={12} className="text-amber-400 fill-amber-400" />
@@ -225,7 +236,12 @@ export default function ProductSearchPage() {
                   <img src={product.image} alt={product.name} className="w-14 h-14 rounded-xl object-cover bg-slate-100 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-slate-900 font-semibold text-sm">{product.name}</p>
-                    <p className="text-slate-400 text-xs">{product.sku} · {product.category}</p>
+                    <p className="text-slate-400 text-xs">
+                      {product.sku}
+                      {product.barcode ? <> · <span className="font-mono">{product.barcode}</span></> : null}
+                      {" · "}
+                      {product.category}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Star size={12} className="text-amber-400 fill-amber-400" />
