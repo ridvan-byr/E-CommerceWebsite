@@ -17,8 +17,15 @@ public class DataContext : DbContext{
     {
         base.OnModelCreating(modelBuilder);
     {
-        modelBuilder.Entity<Product>().HasOne(p => p.Category).WithMany(c => c.Products).HasForeignKey(p => p.CategoryId);
-        modelBuilder.Entity<Product>().Property(p => p.IsDeleted).HasDefaultValue(false);
+        modelBuilder.Entity<Product>(e =>
+        {
+        e.HasOne(p => p.Category).WithMany(c => c.Products).HasForeignKey(p => p.CategoryId);
+        e.Property(p => p.IsDeleted).HasDefaultValue(false);
+        e.Property(p => p.Sku).IsRequired().HasMaxLength(50);
+        e.HasIndex(p => p.Sku).IsUnique();
+        e.Property(p => p.Barcode).HasMaxLength(32);
+        e.HasIndex(p => p.Barcode).IsUnique().HasFilter("[Barcode] IS NOT NULL");
+        });
         modelBuilder.Entity<ProductPrice>().HasOne(p => p.Product).WithMany(c => c.ProductPrices).HasForeignKey(p => p.ProductId);
         modelBuilder.Entity<ProductFeature>().HasOne(p => p.Product).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.ProductId);
         modelBuilder.Entity<ProductFeature>().HasOne(p => p.Feature).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.FeatureId);

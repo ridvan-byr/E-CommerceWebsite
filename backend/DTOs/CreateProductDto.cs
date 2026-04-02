@@ -4,6 +4,10 @@ namespace backend.DTOs;
 
 public class CreateProductDto
 {
+    [Required(ErrorMessage = "Kategori seçilmelidir.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Geçerli bir kategori seçiniz.")]
+    public int CategoryId { get; set; }
+    
     [Required(ErrorMessage = "Ürün adı zorunludur.")]
     [MinLength(2, ErrorMessage = "Ürün adı en az 2 karakter olmalıdır.")]
     [MaxLength(200, ErrorMessage = "Ürün adı en fazla 200 karakter olmalıdır.")]
@@ -11,15 +15,7 @@ public class CreateProductDto
 
     [MaxLength(2000, ErrorMessage = "Açıklama en fazla 2000 karakter olmalıdır.")]
     public string? Description { get; set; }
-
     
-    [MaxLength(50, ErrorMessage = "SKU kodu en fazla 50 karakter olmalıdır.")]
-    public string? Sku { get; set; }
-
-    [Required(ErrorMessage = "Kategori seçilmelidir.")]
-    [Range(1, int.MaxValue, ErrorMessage = "Geçerli bir kategori seçiniz.")]
-    public int CategoryId { get; set; }
-
     [Required]
     [Range(typeof(decimal), "0", "79228162514264337593543950335", ErrorMessage = "Fiyat 0 veya üzeri olmalıdır.")]
     public decimal Price { get; set; }
@@ -33,12 +29,15 @@ public class CreateProductDto
     public int Stock { get; set; }
 
     [Required]
-    [RegularExpression("^(active|inactive|draft)$", ErrorMessage = "Durum yalnızca active, inactive veya draft olabilir.")]
+    [ProductStatusValue]
     [MaxLength(20)]
     public string Status { get; set; } = "active";
 
     [MaxLength(500, ErrorMessage = "Resim URL en fazla 500 karakter olmalıdır.")]
     public string? ImageUrl { get; set; }
-
+    
+    [MaxLength(32, ErrorMessage = "Barkod en fazla 32 karakter olabilir.")]
+    [RegularExpression(@"^$|^[0-9]{8,14}$", ErrorMessage = "Barkod boş bırakılabilir veya 8–14 haneli rakam olmalıdır.")]
+    public string? Barcode { get; set; }
     // public List<CreateProductFeatureDto> Features { get; set; } = new List<CreateProductFeatureDto>();
 }

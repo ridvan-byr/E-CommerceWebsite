@@ -1,6 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using backend.DTOs;
 
@@ -8,10 +7,10 @@ namespace backend.Services
 {
     public interface ICategoryService
     {
-        Task<IReadOnlyList<CategoryResponseDto>> GetAllAsync();
-        Task<CategoryResponseDto?> GetByIdAsync(int id);
-        Task<CategoryResponseDto> CreateAsync(CreateCategoryDto dto);
-        Task<CategoryResponseDto?> UpdateAsync(int id, UpdateCategoryDto dto);
-        Task<bool> SoftDeleteAsync(int id);
+        Task<IReadOnlyList<CategoryResponseDto>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<CategoryResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<CategoryResponseDto> CreateAsync(CreateCategoryDto dto, CancellationToken cancellationToken = default);
+        Task<CategoryResponseDto?> UpdateAsync(int id, UpdateCategoryDto dto, CancellationToken cancellationToken = default);
+        Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default);
     }
 }

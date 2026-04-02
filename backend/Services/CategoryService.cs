@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
@@ -14,7 +16,7 @@ public class CategoryService : ICategoryService
         _context = context;
     }
 
-    public async Task<IReadOnlyList<CategoryResponseDto>> GetAllAsync()
+    public async Task<IReadOnlyList<CategoryResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Categories
             .AsNoTracking()
@@ -33,10 +35,10 @@ public class CategoryService : ICategoryService
                 UpdatedBy = c.UpdatedBy,
                 UpdatedAt = c.UpdatedAt,
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<CategoryResponseDto?> GetByIdAsync(int id)
+    public async Task<CategoryResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.Categories
             .AsNoTracking()
@@ -54,10 +56,10 @@ public class CategoryService : ICategoryService
                 UpdatedBy = c.UpdatedBy,
                 UpdatedAt = c.UpdatedAt,
             })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<CategoryResponseDto> CreateAsync(CreateCategoryDto dto)
+    public async Task<CategoryResponseDto> CreateAsync(CreateCategoryDto dto, CancellationToken cancellationToken = default)
     {
         var category = new Category
         {
@@ -72,7 +74,7 @@ public class CategoryService : ICategoryService
         };
 
         _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return new CategoryResponseDto
         {
@@ -89,9 +91,9 @@ public class CategoryService : ICategoryService
         };
     }
 
-    public async Task<CategoryResponseDto?> UpdateAsync(int id, UpdateCategoryDto dto)
+    public async Task<CategoryResponseDto?> UpdateAsync(int id, UpdateCategoryDto dto, CancellationToken cancellationToken = default)
     {
-        var category = await _context.Categories.FindAsync(id);
+        var category = await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
         if (category is null || category.IsDeleted)
         {
             return null;
@@ -103,14 +105,14 @@ public class CategoryService : ICategoryService
         category.UpdatedAt = DateTime.UtcNow;
         category.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(id);
+        return await GetByIdAsync(id, cancellationToken);
     }
 
-    public async Task<bool> SoftDeleteAsync(int id)
+    public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var category = await _context.Categories.FindAsync(id);
+        var category = await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
         if (category is null || category.IsDeleted)
         {
             return false;
@@ -119,7 +121,7 @@ public class CategoryService : ICategoryService
         category.IsDeleted = true;
         category.UpdatedAt = DateTime.UtcNow;
         category.UpdatedBy = "System";
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

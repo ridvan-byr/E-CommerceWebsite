@@ -1,8 +1,8 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using backend.Data;
 using backend.DTOs;
-using backend.Models;
+using backend.Services;
 
 namespace backend.Controllers;
 
@@ -12,48 +12,86 @@ namespace backend.Controllers;
 public class ProductController : ControllerBase
 {
 
-    private readonly DataContext _context;
+    private readonly IProductService _productService;
 
-    public ProductController(DataContext context)
+    public ProductController(IProductService productService)
     {
-        _context = context;
+        _productService = productService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetProductList([FromQuery] int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        var list = await _productService.GetAllAsync(page, pageSize, cancellationToken);
+        return Ok(list);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetProduct(int id)
+    public async Task<IActionResult> GetProduct(int id, CancellationToken cancellationToken = default)
     {
-        var product = await _context.Products.FindAsync(id);
-        return Ok(product);
+            var product = await _productService.GetByIdAsync(id, cancellationToken);
+            if (product is null)
+            {
+                return NotFound();
+            }
+            return Ok(product);
     }
 
 
     [HttpPost]
-    public async Task<IActionResult> CreateProduct([FromBody] CreateProductDto dto)
+    public async Task<IActionResult> CreateProduct([FromBody] CreateProductDto dto, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        var product = new Product
-        {
-            Name = dto.Name,
-            Description = dto.Description,
-            Sku = dto.Sku,
-            Price = dto.Price,
-            OriginalPrice = dto.OriginalPrice,
-            IsDiscount = dto.IsDiscount,
-            Stock = dto.Stock,
-            Status = dto.Status,
-            ImageUrl = dto.ImageUrl,
-            CreatedBy = "System",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedBy = null,
-            UpdatedAt = null
-        };
 
-        await _context.Products.AddAsync(product);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetProduct), new { id = product.ProductId }, product);
+        var result = await _productService.CreateAsync(dto, cancellationToken);
+        if (result is null)
+        {
+            return BadRequest(new { message = "Belirtilen kategori bulunamadı veya silinmiş. Geçerli bir categoryId kullanın." });
+        }
+
+        return CreatedAtAction(nameof(GetProduct), new { id = result.ProductId }, result);
     }
+
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductDto dto, CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var result = await _productService.UpdateAsync(id, dto, cancellationToken);
+        if (result is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteProduct(int id, CancellationToken cancellationToken = default)
+    {
+        var deleted = await _productService.SoftDeleteAsync(id, cancellationToken);
+        if (!deleted)
+        {
+            return NotFound();
+        }
+        return NoContent();
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchProduct([FromQuery] ProductListFilter filter, CancellationToken cancellationToken = default)
+    {
+        var result = await _productService.SearchProductAsync(filter, cancellationToken);
+        return Ok(result);
+    }
+
+    
+    
 }

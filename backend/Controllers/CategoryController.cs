@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using backend.DTOs;
 using backend.Services;
@@ -16,16 +18,16 @@ public class CategoryController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetCategoryList()
+    public async Task<IActionResult> GetCategoryList(CancellationToken cancellationToken = default)
     {
-        var list = await _categoryService.GetAllAsync();
+        var list = await _categoryService.GetAllAsync(cancellationToken);
         return Ok(list);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetCategory(int id)
+    public async Task<IActionResult> GetCategory(int id, CancellationToken cancellationToken = default)
     {
-        var category = await _categoryService.GetByIdAsync(id);
+        var category = await _categoryService.GetByIdAsync(id, cancellationToken);
         if (category is null)
         {
             return NotFound();
@@ -35,26 +37,26 @@ public class CategoryController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto)
+    public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        var result = await _categoryService.CreateAsync(dto);
+        var result = await _categoryService.CreateAsync(dto, cancellationToken);
         return CreatedAtAction(nameof(GetCategory), new { id = result.CategoryId }, result);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryDto dto)
+    public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryDto dto, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        var result = await _categoryService.UpdateAsync(id, dto);
+        var result = await _categoryService.UpdateAsync(id, dto, cancellationToken);
         if (result is null)
         {
             return NotFound();
@@ -64,9 +66,9 @@ public class CategoryController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteCategory(int id)
+    public async Task<IActionResult> DeleteCategory(int id, CancellationToken cancellationToken = default)
     {
-        var deleted = await _categoryService.SoftDeleteAsync(id);
+        var deleted = await _categoryService.SoftDeleteAsync(id, cancellationToken);
         if (!deleted)
         {
             return NotFound();

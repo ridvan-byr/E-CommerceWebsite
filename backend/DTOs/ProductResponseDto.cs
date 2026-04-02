@@ -1,12 +1,19 @@
-namespace backend.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using backend.Models;
 
-public class Product
+namespace backend.DTOs
+
 {
+    public class ProductResponseDto
+    {
     public int ProductId { get; set; }
     public int CategoryId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string Sku { get; set; } = string.Empty;
+    public string? Sku { get; set; } = string.Empty;
     public string? Barcode { get; set; }
     public decimal Price { get; set; }
     public decimal? OriginalPrice { get; set; }
@@ -22,5 +29,5 @@ public class Product
 
     public Category Category { get; set; } = null!;
     public ICollection<ProductPrice> ProductPrices { get; set; } = new List<ProductPrice>();
-    public ICollection<ProductFeature> ProductFeatures { get; set; } = new List<ProductFeature>();
+    }
 }
