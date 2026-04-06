@@ -1,62 +1,32 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using backend.Data;
 using backend.DTOs;
 using backend.Models;
-using Microsoft.EntityFrameworkCore;
+using backend.Repositories;
 
 namespace backend.Services;
 
 public class CategoryService : ICategoryService
 {
-    private readonly DataContext _context;
+    private readonly ICategoryRepository _categoryRepository;
 
-    public CategoryService(DataContext context)
+    public CategoryService(ICategoryRepository categoryRepository)
     {
-        _context = context;
+        _categoryRepository = categoryRepository;
     }
 
     public async Task<IReadOnlyList<CategoryResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Categories
-            .AsNoTracking()
-            .Where(c => !c.IsDeleted)
-            .OrderBy(c => c.Name)
-            .Select(c => new CategoryResponseDto
-            {
-                CategoryId = c.CategoryId,
-                Name = c.Name,
-                Description = c.Description,
-                ImageUrl = c.ImageUrl,
-                ProductCount = c.Products.Count(p => !p.IsDeleted),
-                IsDeleted = c.IsDeleted,
-                CreatedBy = c.CreatedBy,
-                CreatedAt = c.CreatedAt,
-                UpdatedBy = c.UpdatedBy,
-                UpdatedAt = c.UpdatedAt,
-            })
-            .ToListAsync(cancellationToken);
+        var categories = await _categoryRepository.GetAllActiveWithNonDeletedProductsAsync(cancellationToken);
+        return categories.Select(MapToDto).ToList();
     }
 
     public async Task<CategoryResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _context.Categories
-            .AsNoTracking()
-            .Where(c => c.CategoryId == id && !c.IsDeleted)
-            .Select(c => new CategoryResponseDto
-            {
-                CategoryId = c.CategoryId,
-                Name = c.Name,
-                Description = c.Description,
-                ImageUrl = c.ImageUrl,
-                ProductCount = c.Products.Count(p => !p.IsDeleted),
-                IsDeleted = c.IsDeleted,
-                CreatedBy = c.CreatedBy,
-                CreatedAt = c.CreatedAt,
-                UpdatedBy = c.UpdatedBy,
-                UpdatedAt = c.UpdatedAt,
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var category = await _categoryRepository.GetActiveByIdWithNonDeletedProductsAsync(id, cancellationToken);
+        return category is null ? null : MapToDto(category);
     }
 
     public async Task<CategoryResponseDto> CreateAsync(CreateCategoryDto dto, CancellationToken cancellationToken = default)
@@ -73,8 +43,8 @@ public class CategoryService : ICategoryService
             UpdatedBy = null,
         };
 
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _categoryRepository.AddAsync(category, cancellationToken);
+        await _categoryRepository.SaveChangesAsync(cancellationToken);
 
         return new CategoryResponseDto
         {
@@ -93,11 +63,9 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryResponseDto?> UpdateAsync(int id, UpdateCategoryDto dto, CancellationToken cancellationToken = default)
     {
-        var category = await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
-        if (category is null || category.IsDeleted)
-        {
+        var category = await _categoryRepository.GetTrackedActiveByIdAsync(id, cancellationToken);
+        if (category is null)
             return null;
-        }
 
         category.Name = dto.Name;
         category.Description = dto.Description;
@@ -105,23 +73,35 @@ public class CategoryService : ICategoryService
         category.UpdatedAt = DateTime.UtcNow;
         category.UpdatedBy = "System";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _categoryRepository.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(id, cancellationToken);
     }
 
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var category = await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
-        if (category is null || category.IsDeleted)
-        {
+        var category = await _categoryRepository.GetTrackedActiveByIdAsync(id, cancellationToken);
+        if (category is null)
             return false;
-        }
 
         category.IsDeleted = true;
         category.UpdatedAt = DateTime.UtcNow;
         category.UpdatedBy = "System";
-        await _context.SaveChangesAsync(cancellationToken);
+        await _categoryRepository.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    private static CategoryResponseDto MapToDto(Category c) => new()
+    {
+        CategoryId = c.CategoryId,
+        Name = c.Name,
+        Description = c.Description,
+        ImageUrl = c.ImageUrl,
+        ProductCount = c.Products.Count,
+        IsDeleted = c.IsDeleted,
+        CreatedBy = c.CreatedBy,
+        CreatedAt = c.CreatedAt,
+        UpdatedBy = c.UpdatedBy,
+        UpdatedAt = c.UpdatedAt,
+    };
 }
