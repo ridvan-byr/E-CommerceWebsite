@@ -25,7 +25,9 @@ public class ProductService : IProductService
         if (product == null)
             return null;
 
-        return MapToResponseDto(product);
+        var dto = MapToResponseDto(product);
+        dto.CategoryName = await _productRepository.GetCategoryNameAsync(product.CategoryId, cancellationToken);
+        return dto;
     }
 
     public async Task<ProductResponseDto?> CreateAsync(CreateProductDto dto, CancellationToken cancellationToken = default)
@@ -38,9 +40,7 @@ public class ProductService : IProductService
 
         if (normalizedBarcode is not null
             && await _productRepository.IsBarcodeTakenAsync(normalizedBarcode, excludeProductId: null, cancellationToken))
-        {
             return null;
-        }
 
         var product = new Product
         {
@@ -50,7 +50,7 @@ public class ProductService : IProductService
             Sku = "TMP-" + Guid.NewGuid().ToString("N"),
             Barcode = normalizedBarcode,
             Price = dto.Price,
-            OriginalPrice = dto.OriginalPrice,
+            OriginalPrice = dto.IsDiscount ? dto.OriginalPrice : null,
             IsDiscount = dto.IsDiscount,
             Stock = dto.Stock,
             Status = dto.Status,
@@ -68,17 +68,20 @@ public class ProductService : IProductService
         product.Sku = $"PRD-{product.ProductId:D7}";
         await _productRepository.SaveChangesAsync(cancellationToken);
 
+        var categoryName = await _productRepository.GetCategoryNameAsync(product.CategoryId, cancellationToken);
+
         return new ProductResponseDto
         {
             ProductId = product.ProductId,
             CategoryId = dto.CategoryId,
+            CategoryName = categoryName,
             Name = dto.Name,
             Description = dto.Description,
             Sku = product.Sku,
             Barcode = product.Barcode,
-            Price = dto.Price,
-            OriginalPrice = dto.OriginalPrice,
-            IsDiscount = dto.IsDiscount,
+            Price = product.Price,
+            OriginalPrice = product.OriginalPrice,
+            IsDiscount = product.IsDiscount,
             Stock = dto.Stock,
             Status = dto.Status,
             ImageUrl = dto.ImageUrl
@@ -91,10 +94,31 @@ public class ProductService : IProductService
         if (product is null)
             return null;
 
+        if (dto.CategoryId != product.CategoryId)
+        {
+            var ok = await _productRepository.CategoryExistsActiveAsync(dto.CategoryId, cancellationToken);
+            if (!ok)
+                return null;
+        }
+
+        var normalizedBarcode = NormalizeBarcode(dto.Barcode);
+        if (normalizedBarcode != product.Barcode
+            && normalizedBarcode is not null
+            && await _productRepository.IsBarcodeTakenAsync(normalizedBarcode, excludeProductId: id, cancellationToken))
+            return null;
+
+        product.CategoryId = dto.CategoryId;
         product.Name = dto.Name;
         product.Description = dto.Description;
-        product.ImageUrl = dto.ImageUrl;
+        product.Barcode = normalizedBarcode;
+        product.Price = dto.Price;
+        product.OriginalPrice = dto.IsDiscount ? dto.OriginalPrice : null;
+        product.IsDiscount = dto.IsDiscount;
+        product.Stock = dto.Stock;
         product.Status = dto.Status;
+        product.ImageUrl = dto.ImageUrl;
+        product.UpdatedAt = DateTime.UtcNow;
+        product.UpdatedBy = "System";
 
         await _productRepository.SaveChangesAsync(cancellationToken);
 
@@ -122,13 +146,32 @@ public class ProductService : IProductService
         var page = Math.Max(1, f.Page);
         var size = Math.Clamp(f.PageSize, 1, 100);
 
+        var list = items.Select(MapToResponseDto).ToList();
+        await EnrichCategoryNamesAsync(list, cancellationToken);
+
         return new PagedResult<ProductResponseDto>
         {
-            Items = items.Select(MapToResponseDto).ToList(),
+            Items = list,
             TotalCount = total,
             Page = page,
             PageSize = size,
         };
+    }
+
+    private async Task EnrichCategoryNamesAsync(List<ProductResponseDto> items, CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+            return;
+
+        var map = await _productRepository.GetCategoryNamesByIdsAsync(
+            items.Select(i => i.CategoryId),
+            cancellationToken);
+
+        foreach (var i in items)
+        {
+            if (map.TryGetValue(i.CategoryId, out var name))
+                i.CategoryName = name;
+        }
     }
 
     private static ProductResponseDto MapToResponseDto(Product product) => new()

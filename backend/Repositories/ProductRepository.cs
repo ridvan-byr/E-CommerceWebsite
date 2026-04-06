@@ -43,6 +43,28 @@ public class ProductRepository : IProductRepository
         return q.AnyAsync(cancellationToken);
     }
 
+    public Task<string?> GetCategoryNameAsync(int categoryId, CancellationToken cancellationToken = default) =>
+        _context.Categories.AsNoTracking()
+            .Where(c => c.CategoryId == categoryId && !c.IsDeleted)
+            .Select(c => c.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyDictionary<int, string>> GetCategoryNamesByIdsAsync(
+        IEnumerable<int> categoryIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = categoryIds.Distinct().ToArray();
+        if (ids.Length == 0)
+            return new Dictionary<int, string>();
+
+        var rows = await _context.Categories.AsNoTracking()
+            .Where(c => ids.Contains(c.CategoryId) && !c.IsDeleted)
+            .Select(c => new { c.CategoryId, c.Name })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(x => x.CategoryId, x => x.Name);
+    }
+
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {
         await _context.Products.AddAsync(product, cancellationToken);
@@ -71,6 +93,7 @@ public class ProductRepository : IProductRepository
             query = query.Where(p =>
                 p.Name.Contains(s)
                 || (p.Sku != null && p.Sku.Contains(s))
+                || (p.Barcode != null && p.Barcode.Contains(s))
                 || (p.Description != null && p.Description.Contains(s)));
         }
 
@@ -94,8 +117,16 @@ public class ProductRepository : IProductRepository
         var page = Math.Max(1, f.Page);
         var size = Math.Clamp(f.PageSize, 1, 100);
 
-        var items = await query
-            .OrderBy(p => p.Name)
+        var sort = f.SortBy?.Trim().ToLowerInvariant();
+        var ordered = sort switch
+        {
+            "price_asc" => query.OrderBy(p => p.Price).ThenBy(p => p.ProductId),
+            "price_desc" => query.OrderByDescending(p => p.Price).ThenBy(p => p.ProductId),
+            "stock" => query.OrderByDescending(p => p.Stock).ThenBy(p => p.ProductId),
+            _ => query.OrderBy(p => p.Name).ThenBy(p => p.ProductId),
+        };
+
+        var items = await ordered
             .Skip((page - 1) * size)
             .Take(size)
             .ToListAsync(cancellationToken);

@@ -50,7 +50,10 @@ public class ProductController : ControllerBase
         var result = await _productService.CreateAsync(dto, cancellationToken);
         if (result is null)
         {
-            return BadRequest(new { message = "Belirtilen kategori bulunamadı veya silinmiş. Geçerli bir categoryId kullanın." });
+            return BadRequest(new
+            {
+                message = "Ürün oluşturulamadı: kategori geçersiz veya silinmiş, barkod başka üründe kayıtlı olabilir."
+            });
         }
 
         return CreatedAtAction(nameof(GetProduct), new { id = result.ProductId }, result);
@@ -65,10 +68,17 @@ public class ProductController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        var existing = await _productService.GetByIdAsync(id, cancellationToken);
+        if (existing is null)
+            return NotFound();
+
         var result = await _productService.UpdateAsync(id, dto, cancellationToken);
         if (result is null)
         {
-            return NotFound();
+            return BadRequest(new
+            {
+                message = "Güncelleme reddedildi: kategori geçersiz veya barkod başka üründe kayıtlı olabilir."
+            });
         }
 
         return Ok(result);
