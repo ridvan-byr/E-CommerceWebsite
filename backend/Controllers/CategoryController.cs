@@ -74,6 +74,6 @@ public class CategoryController : ControllerBase
             return NotFound();
         }
 
-        return NoContent();
+        return Ok(new { message = "Kategori silindi.", id });
     }
 }

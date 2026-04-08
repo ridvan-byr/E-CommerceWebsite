@@ -41,10 +41,9 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<Category?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var category = await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
-        if (category is null || category.IsDeleted)
-            return null;
-        return category;
+       return await _context.Categories
+       .AsNoTracking()
+       .FirstOrDefaultAsync(c => c.CategoryId == id && !c.IsDeleted);
     }
 
     public async Task AddAsync(Category entity, CancellationToken cancellationToken = default)

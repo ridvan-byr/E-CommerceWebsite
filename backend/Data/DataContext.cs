@@ -30,6 +30,15 @@ public class DataContext : DbContext{
         modelBuilder.Entity<ProductFeature>().HasOne(p => p.Product).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.ProductId);
         modelBuilder.Entity<ProductFeature>().HasOne(p => p.Feature).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.FeatureId);
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+
+        modelBuilder.Entity<Feature>(e =>
+        {
+            e.Property(f => f.Name).IsRequired().HasMaxLength(100);
+            e.Property(f => f.IsDeleted).HasDefaultValue(false);
+            e.HasIndex(f => f.Name)
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0");
+        });
     }
 
     

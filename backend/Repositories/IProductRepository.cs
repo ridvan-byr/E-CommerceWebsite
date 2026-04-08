@@ -15,7 +15,6 @@ public interface IProductRepository
         IEnumerable<int> categoryIds,
         CancellationToken cancellationToken = default);
     Task AddAsync(Product product, CancellationToken cancellationToken = default);
-    Task UpdateAsync(Product product, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<Product> Items, int TotalCount)> SearchAsync(ProductListFilter f, CancellationToken cancellationToken = default);
 }

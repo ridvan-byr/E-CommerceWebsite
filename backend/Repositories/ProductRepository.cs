@@ -14,10 +14,12 @@ public class ProductRepository : IProductRepository
         _context = context;
     }
 
-    public Task<Product?> GetActiveByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        _context.Products
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.ProductId == id && !c.IsDeleted, cancellationToken);
+    public async Task<Product?> GetActiveByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Products
+        .AsNoTracking()
+        .FirstOrDefaultAsync(c => c.ProductId == id && !c.IsDeleted);
+    }
 
     public async Task<Product?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -68,12 +70,6 @@ public class ProductRepository : IProductRepository
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {
         await _context.Products.AddAsync(product, cancellationToken);
-    }
-
-    public Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
-    {
-        _context.Products.Update(product);
-        return Task.CompletedTask;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
