@@ -16,7 +16,6 @@ public class DataContext : DbContext{
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-    {
         modelBuilder.Entity<Product>(e =>
         {
         e.HasOne(p => p.Category).WithMany(c => c.Products).HasForeignKey(p => p.CategoryId);
@@ -27,8 +26,14 @@ public class DataContext : DbContext{
         e.HasIndex(p => p.Barcode).IsUnique().HasFilter("[Barcode] IS NOT NULL");
         });
         modelBuilder.Entity<ProductPrice>().HasOne(p => p.Product).WithMany(c => c.ProductPrices).HasForeignKey(p => p.ProductId);
-        modelBuilder.Entity<ProductFeature>().HasOne(p => p.Product).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.ProductId);
-        modelBuilder.Entity<ProductFeature>().HasOne(p => p.Feature).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.FeatureId);
+
+        modelBuilder.Entity<ProductFeature>(e =>
+        {
+            e.HasOne(p => p.Product).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.ProductId);
+            e.HasOne(p => p.Feature).WithMany(c => c.ProductFeatures).HasForeignKey(p => p.FeatureId);
+            e.Property(p => p.Value).IsRequired().HasMaxLength(500);
+            e.HasIndex(p => new { p.ProductId, p.FeatureId }).IsUnique();
+        });
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
         modelBuilder.Entity<Feature>(e =>
@@ -40,7 +45,4 @@ public class DataContext : DbContext{
                 .HasFilter("[IsDeleted] = 0");
         });
     }
-
-    
-}
 }

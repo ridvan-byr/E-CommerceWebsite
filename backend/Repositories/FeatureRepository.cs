@@ -34,12 +34,12 @@ public class FeatureRepository : IFeatureRepository
             .FirstOrDefaultAsync(c => c.FeatureId == id && !c.IsDeleted, cancellationToken);
     }
 
-    public Task<Feature?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Feature?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return _context.Features
+        return await _context.Features
             .FirstOrDefaultAsync(c => c.FeatureId == id && !c.IsDeleted, cancellationToken);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        _context.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        await _context.SaveChangesAsync(cancellationToken);
 }
