@@ -57,6 +57,10 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <p className="text-slate-500 text-sm rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        Sipariş ve gelir metrikleri ile aşağıdaki ürün listesi şimdilik örnek (mock) veridir; API’de sipariş uçları yok.
+        Kategori ve ürün yönetimi gerçek backend’e bağlıdır.
+      </p>
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard

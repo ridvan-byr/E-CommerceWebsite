@@ -1,9 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Edit2, Trash2, Package, SlidersHorizontal, Star, Eye } from "lucide-react";
-import { products as initialProducts, categories } from "@/lib/mockData";
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Package,
+  SlidersHorizontal,
+  Eye,
+  Loader2,
+} from "lucide-react";
+import { searchProducts, deleteProduct } from "@/lib/api/productsApi";
+import { fetchCategories } from "@/lib/api/categoriesApi";
+import type { ProductDto } from "@/lib/api/types";
+import type { CategoryDto } from "@/lib/api/types";
+import { ApiRequestError } from "@/lib/api/client";
 
 const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
   active: { label: "Aktif", className: "text-emerald-700 bg-emerald-50", dot: "bg-emerald-500" },
@@ -12,31 +25,65 @@ const statusConfig: Record<string, { label: string; className: string; dot: stri
 };
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<ProductDto[]>([]);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const filtered = products.filter((p) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      p.name.toLowerCase().includes(q) ||
-      p.sku.toLowerCase().includes(q) ||
-      (p.barcode?.toLowerCase().includes(q) ?? false);
-    const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
-    const matchStatus = selectedStatus === "all" || p.status === selectedStatus;
-    return matchSearch && matchCategory && matchStatus;
-  });
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [catRes, prodRes] = await Promise.all([
+        fetchCategories(),
+        searchProducts({
+          search: search.trim() || undefined,
+          categoryId:
+            selectedCategory === "all" ? undefined : Number(selectedCategory),
+          status: selectedStatus === "all" ? undefined : selectedStatus,
+          page: 1,
+          pageSize: 200,
+        }),
+      ]);
+      setCategories(catRes);
+      setProducts(prodRes.items);
+      setTotalCount(prodRes.totalCount);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Yüklenemedi");
+    } finally {
+      setLoading(false);
+    }
+  }, [search, selectedCategory, selectedStatus]);
 
-  const handleDelete = (id: number) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    setDeleteId(null);
+  useEffect(() => {
+    const t = setTimeout(() => void load(), 300);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  const handleDelete = async (id: number) => {
+    setDeleting(true);
+    try {
+      await deleteProduct(id);
+      setProducts((prev) => prev.filter((p) => p.productId !== id));
+      setDeleteId(null);
+    } catch (e) {
+      alert(e instanceof ApiRequestError ? e.message : "Silinemedi");
+    } finally {
+      setDeleting(false);
+    }
   };
+
+  const img = (p: ProductDto) =>
+    p.imageUrl?.trim() || "https://placehold.co/96x96/e2e8f0/64748b?text=Ü";
 
   return (
     <div className="space-y-6">
-      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -57,7 +104,6 @@ export default function ProductsPage() {
         </Link>
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-slate-500">
           <SlidersHorizontal size={15} />
@@ -69,7 +115,11 @@ export default function ProductsPage() {
           className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
         >
           <option value="all">Tüm Kategoriler</option>
-          {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+          {categories.map((c) => (
+            <option key={c.categoryId} value={String(c.categoryId)}>
+              {c.name}
+            </option>
+          ))}
         </select>
         <select
           value={selectedStatus}
@@ -83,7 +133,12 @@ export default function ProductsPage() {
         </select>
         {(selectedCategory !== "all" || selectedStatus !== "all" || search) && (
           <button
-            onClick={() => { setSearch(""); setSelectedCategory("all"); setSelectedStatus("all"); }}
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setSelectedCategory("all");
+              setSelectedStatus("all");
+            }}
             className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-red-500 hover:bg-red-50 text-sm font-medium transition-all"
           >
             Temizle
@@ -91,124 +146,165 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <p className="text-slate-500 text-sm">
-            <span className="text-slate-900 font-semibold">{filtered.length}</span> ürün listeleniyor
-          </p>
-          <div className="flex gap-2 text-xs text-slate-400">
-            <span className="px-2 py-1 bg-slate-50 rounded-lg">Toplam stok: {filtered.reduce((s, p) => s + p.stock, 0)}</span>
+      {loadError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button type="button" onClick={() => void load()} className="text-red-600 font-medium underline">
+            Tekrar dene
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-24 text-slate-500 gap-2">
+          <Loader2 className="animate-spin" size={22} />
+          <span className="text-sm">Ürünler yükleniyor…</span>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+            <p className="text-slate-500 text-sm">
+              <span className="text-slate-900 font-semibold">{products.length}</span> kayıt (toplam: {totalCount})
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-100">
+                  <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-6 py-3">
+                    Ürün
+                  </th>
+                  <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
+                    Kategori
+                  </th>
+                  <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
+                    Fiyat
+                  </th>
+                  <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
+                    Stok
+                  </th>
+                  <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
+                    Puan
+                  </th>
+                  <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
+                    Durum
+                  </th>
+                  <th className="text-right text-slate-500 text-xs font-semibold uppercase tracking-wide px-6 py-3">
+                    İşlemler
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {products.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center">
+                          <Package size={24} className="text-slate-400" />
+                        </div>
+                        <p className="text-slate-500 text-sm">Kayıt yok veya filtreye uygun ürün bulunamadı.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  products.map((product) => {
+                    const status = statusConfig[product.status] ?? statusConfig.active;
+                    return (
+                      <tr key={product.productId} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={img(product)}
+                              alt={product.name}
+                              className="w-12 h-12 rounded-xl object-cover bg-slate-100 flex-shrink-0"
+                            />
+                            <div>
+                              <p className="text-slate-900 text-sm font-semibold">{product.name}</p>
+                              <p className="text-slate-400 text-xs">
+                                {product.sku}
+                                {product.barcode ? <span className="text-slate-300"> · </span> : null}
+                                {product.barcode ? (
+                                  <span className="font-mono">{product.barcode}</span>
+                                ) : null}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center h-6 px-2.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">
+                            {product.categoryName ?? "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div>
+                            <span className="text-slate-900 text-sm font-bold">
+                              ₺{Number(product.price).toLocaleString("tr-TR")}
+                            </span>
+                            {product.isDiscount && product.originalPrice != null && (
+                              <p className="text-slate-400 text-xs line-through">
+                                ₺{Number(product.originalPrice).toLocaleString("tr-TR")}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`text-sm font-semibold ${
+                              product.stock === 0
+                                ? "text-red-600"
+                                : product.stock < 30
+                                  ? "text-amber-600"
+                                  : "text-slate-700"
+                            }`}
+                          >
+                            {product.stock === 0 ? "Tükendi" : product.stock}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-slate-400 text-xs">—</td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${status.className}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/products/${product.productId}/preview`}
+                              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-sky-50 hover:text-sky-600 border border-slate-200 hover:border-sky-200 text-xs font-medium transition-all"
+                            >
+                              <Eye size={13} />
+                              Görüntüle
+                            </Link>
+                            <Link
+                              href={`/products/${product.productId}`}
+                              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 text-xs font-medium transition-all"
+                            >
+                              <Edit2 size={13} />
+                              Düzenle
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteId(product.productId)}
+                              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 text-xs font-medium transition-all"
+                            >
+                              <Trash2 size={13} />
+                              Sil
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-6 py-3">Ürün</th>
-                <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">Kategori</th>
-                <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">Fiyat</th>
-                <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">Stok</th>
-                <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">Puan</th>
-                <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">Durum</th>
-                <th className="text-right text-slate-500 text-xs font-semibold uppercase tracking-wide px-6 py-3">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center">
-                        <Package size={24} className="text-slate-400" />
-                      </div>
-                      <p className="text-slate-500 text-sm">Arama kriterine uygun ürün bulunamadı.</p>
-                      <button onClick={() => { setSearch(""); setSelectedCategory("all"); setSelectedStatus("all"); }} className="text-indigo-600 text-sm font-medium hover:text-indigo-700">Filtreleri Temizle</button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((product) => {
-                  const status = statusConfig[product.status];
-                  return (
-                    <tr key={product.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <img src={product.image} alt={product.name} className="w-12 h-12 rounded-xl object-cover bg-slate-100 flex-shrink-0" />
-                          <div>
-                            <p className="text-slate-900 text-sm font-semibold">{product.name}</p>
-                            <p className="text-slate-400 text-xs">
-                              {product.sku}
-                              {product.barcode ? <span className="text-slate-300"> · </span> : null}
-                              {product.barcode ? <span className="font-mono">{product.barcode}</span> : null}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="inline-flex items-center h-6 px-2.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">{product.category}</span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div>
-                          <span className="text-slate-900 text-sm font-bold">₺{product.price.toLocaleString("tr-TR")}</span>
-                          {product.isDiscount && product.originalPrice && (
-                            <p className="text-slate-400 text-xs line-through">₺{product.originalPrice.toLocaleString("tr-TR")}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`text-sm font-semibold ${product.stock === 0 ? "text-red-600" : product.stock < 30 ? "text-amber-600" : "text-slate-700"}`}>
-                          {product.stock === 0 ? "Tükendi" : product.stock}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-1">
-                          <Star size={13} className="text-amber-400 fill-amber-400" />
-                          <span className="text-slate-700 text-sm font-medium">{product.rating}</span>
-                          <span className="text-slate-400 text-xs">({product.reviewCount})</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${status.className}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                          {status.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/products/${product.id}/preview`}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-sky-50 hover:text-sky-600 border border-slate-200 hover:border-sky-200 text-xs font-medium transition-all"
-                          >
-                            <Eye size={13} />
-                            Görüntüle
-                          </Link>
-                          <Link
-                            href={`/products/${product.id}`}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 text-xs font-medium transition-all"
-                          >
-                            <Edit2 size={13} />
-                            Düzenle
-                          </Link>
-                          <button
-                            onClick={() => setDeleteId(product.id)}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 text-xs font-medium transition-all"
-                          >
-                            <Trash2 size={13} />
-                            Sil
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
-      {/* Delete Modal */}
       {deleteId !== null && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
@@ -216,10 +312,26 @@ export default function ProductsPage() {
               <Trash2 size={22} className="text-red-500" />
             </div>
             <h3 className="text-slate-900 font-bold text-lg mb-2">Ürünü Sil</h3>
-            <p className="text-slate-500 text-sm mb-6">Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+            <p className="text-slate-500 text-sm mb-6">
+              Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 h-10 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">İptal</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 h-10 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all">Evet, Sil</button>
+              <button
+                type="button"
+                onClick={() => setDeleteId(null)}
+                disabled={deleting}
+                className="flex-1 h-10 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDelete(deleteId)}
+                disabled={deleting}
+                className="flex-1 h-10 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all disabled:opacity-60"
+              >
+                {deleting ? "Siliniyor…" : "Evet, Sil"}
+              </button>
             </div>
           </div>
         </div>

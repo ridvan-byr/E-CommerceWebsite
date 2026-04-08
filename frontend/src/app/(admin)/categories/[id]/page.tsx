@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload, CheckCircle, Tag, AlertCircle } from "lucide-react";
-import { categories } from "@/lib/mockData";
+import { fetchCategory, updateCategory } from "@/lib/api/categoriesApi";
+import { ApiRequestError } from "@/lib/api/client";
 
 export default function CategoryEditPage() {
   const router = useRouter();
@@ -14,20 +15,33 @@ export default function CategoryEditPage() {
   const [form, setForm] = useState({ name: "", description: "", image: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [loadInit, setLoadInit] = useState(true);
   const [success, setSuccess] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    const category = categories.find((c) => c.id === categoryId);
-    if (category) {
-      setForm({
-        name: category.name,
-        description: category.description,
-        image: category.image,
-      });
-    } else {
-      setNotFound(true);
-    }
+    let cancelled = false;
+    (async () => {
+      setLoadInit(true);
+      setNotFound(false);
+      try {
+        const c = await fetchCategory(categoryId);
+        if (cancelled) return;
+        setForm({
+          name: c.name,
+          description: c.description ?? "",
+          image: c.imageUrl ?? "",
+        });
+      } catch {
+        if (!cancelled) setNotFound(true);
+      } finally {
+        if (!cancelled) setLoadInit(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [categoryId]);
 
   const validate = () => {
@@ -42,14 +56,32 @@ export default function CategoryEditPage() {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
+    setApiError(null);
     if (Object.keys(errs).length > 0) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSuccess(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    router.push("/categories");
+    try {
+      await updateCategory(categoryId, {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        imageUrl: form.image.trim() || null,
+      });
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 1200));
+      router.push("/categories");
+    } catch (err) {
+      setApiError(
+        err instanceof ApiRequestError ? err.message : "Güncelleme başarısız."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loadInit) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center text-slate-500 text-sm">Yükleniyor…</div>
+    );
+  }
 
   if (notFound) {
     return (
@@ -78,6 +110,10 @@ export default function CategoryEditPage() {
         <ArrowLeft size={16} />
         Kategorilere Dön
       </Link>
+
+      {apiError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+      )}
 
       {success && (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">

@@ -1,108 +1,116 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Package, DollarSign, Image, Tag, CheckCircle,
-  Plus, X, Layers, GripVertical, Pencil, Check,
+  ArrowLeft,
+  Package,
+  DollarSign,
+  Image,
+  CheckCircle,
+  Plus,
+  X,
+  Layers,
 } from "lucide-react";
-import { categories } from "@/lib/mockData";
+import { fetchCategories } from "@/lib/api/categoriesApi";
+import { fetchFeatureDefinitions } from "@/lib/api/featuresApi";
+import { createProduct } from "@/lib/api/productsApi";
+import { createProductFeature } from "@/lib/api/productFeaturesApi";
+import type { CategoryDto, FeatureDefinitionDto } from "@/lib/api/types";
+import { ApiRequestError } from "@/lib/api/client";
 
-interface Feature {
-  id: number;
-  name: string;
-  value: string;
-}
+type FeatureRow = { localId: number; featureId: number; value: string };
 
 export default function ProductCreatePage() {
   const router = useRouter();
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [featureCatalog, setFeatureCatalog] = useState<FeatureDefinitionDto[]>([]);
+  const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
+
   const [form, setForm] = useState({
-    name: "", description: "", price: "", discountPrice: "",
-    stock: "", categoryId: "", sku: "", barcode: "", image: "", status: "active",
+    name: "",
+    description: "",
+    price: "",
+    discountPrice: "",
+    stock: "",
+    categoryId: "",
+    barcode: "",
+    image: "",
+    status: "active",
     isDiscount: false,
   });
-  const [features, setFeatures] = useState<Feature[]>([]);
-  const [newFeatureName, setNewFeatureName] = useState("");
+  const [features, setFeatures] = useState<FeatureRow[]>([]);
+  const [newFeatureId, setNewFeatureId] = useState("");
   const [newFeatureValue, setNewFeatureValue] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const set = (key: string, value: string | boolean) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key: string, value: string | boolean) =>
+    setForm((f) => ({ ...f, [key]: value }));
 
-  const [editingFeatureId, setEditingFeatureId] = useState<number | null>(null);
-  const [editFeatureName, setEditFeatureName] = useState("");
-  const [editFeatureValue, setEditFeatureValue] = useState("");
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [cats, feats] = await Promise.all([
+          fetchCategories(),
+          fetchFeatureDefinitions(),
+        ]);
+        if (!cancelled) {
+          setCategories(cats);
+          setFeatureCatalog(feats.filter((f) => !f.isDeleted));
+        }
+      } catch {
+        if (!cancelled) setCatalogLoadError("Kategori veya özellik listesi yüklenemedi.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addFeature = () => {
-    if (!newFeatureName.trim() || !newFeatureValue.trim()) return;
+    const fid = Number(newFeatureId);
+    if (!fid || !newFeatureValue.trim()) return;
+    if (features.some((r) => r.featureId === fid)) return;
     setFeatures((prev) => [
       ...prev,
-      { id: Date.now(), name: newFeatureName.trim(), value: newFeatureValue.trim() },
+      { localId: Date.now(), featureId: fid, value: newFeatureValue.trim() },
     ]);
-    setNewFeatureName("");
+    setNewFeatureId("");
     setNewFeatureValue("");
   };
 
-  const removeFeature = (id: number) => {
-    setFeatures((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const startEdit = (feature: Feature) => {
-    setEditingFeatureId(feature.id);
-    setEditFeatureName(feature.name);
-    setEditFeatureValue(feature.value);
-  };
-
-  const saveEdit = () => {
-    if (!editFeatureName.trim() || !editFeatureValue.trim()) return;
-    setFeatures((prev) =>
-      prev.map((f) =>
-        f.id === editingFeatureId ? { ...f, name: editFeatureName.trim(), value: editFeatureValue.trim() } : f
-      )
-    );
-    setEditingFeatureId(null);
-  };
-
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (index: number) => {
-    if (dragIndex === null || dragIndex === index) {
-      setDragIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-    setFeatures((prev) => {
-      const updated = [...prev];
-      const [moved] = updated.splice(dragIndex, 1);
-      updated.splice(index, 0, moved);
-      return updated;
-    });
-    setDragIndex(null);
-    setDragOverIndex(null);
+  const removeFeature = (localId: number) => {
+    setFeatures((prev) => prev.filter((f) => f.localId !== localId));
   };
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Ürün adı zorunludur.";
     if (!form.description.trim()) e.description = "Açıklama zorunludur.";
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) e.price = "Geçerli bir fiyat giriniz.";
-    if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = "Geçerli bir stok miktarı giriniz.";
+    if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0)
+      e.stock = "Geçerli bir stok miktarı giriniz.";
     if (!form.categoryId) e.categoryId = "Kategori seçimi zorunludur.";
-    if (!form.sku.trim()) e.sku = "SKU kodu zorunludur.";
     const bc = form.barcode.trim();
     if (bc && !/^[0-9]{8,14}$/.test(bc)) {
       e.barcode = "Barkod boş bırakılabilir veya 8–14 haneli rakam olmalıdır.";
+    }
+    if (form.isDiscount) {
+      const list = Number(form.price);
+      const sale = Number(form.discountPrice);
+      if (!form.price || isNaN(list) || list <= 0) e.price = "Liste fiyatı geçerli olmalıdır.";
+      if (!form.discountPrice || isNaN(sale) || sale <= 0)
+        e.discountPrice = "İndirimli satış fiyatı geçerli olmalıdır.";
+      if (!isNaN(list) && !isNaN(sale) && sale >= list) {
+        e.discountPrice = "İndirimli fiyat, liste fiyatından düşük olmalıdır.";
+      }
+    } else {
+      if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0)
+        e.price = "Geçerli bir fiyat giriniz.";
     }
     return e;
   };
@@ -111,33 +119,80 @@ export default function ProductCreatePage() {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
+    setApiError(null);
     if (Object.keys(errs).length > 0) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSuccess(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    router.push("/products");
+    try {
+      const categoryId = Number(form.categoryId);
+      const listPrice = Number(form.price);
+      const salePrice = form.isDiscount ? Number(form.discountPrice) : listPrice;
+      const payload = {
+        categoryId,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        price: salePrice,
+        originalPrice: form.isDiscount ? listPrice : null,
+        isDiscount: form.isDiscount,
+        stock: Number(form.stock),
+        status: form.status,
+        imageUrl: form.image.trim() || null,
+        barcode: form.barcode.trim() || null,
+      };
+      const created = await createProduct(payload);
+      for (let i = 0; i < features.length; i++) {
+        const row = features[i];
+        await createProductFeature(created.productId, {
+          featureId: row.featureId,
+          value: row.value,
+          sortOrder: i,
+        });
+      }
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 900));
+      router.push("/products");
+    } catch (err) {
+      setApiError(
+        err instanceof ApiRequestError ? err.message : "Ürün kaydedilemedi."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = (field: string) =>
     `w-full h-11 px-4 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors[field] ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`;
 
+  const usedFeatureIds = new Set(features.map((f) => f.featureId));
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <Link href="/products" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
+      <Link
+        href="/products"
+        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
+      >
         <ArrowLeft size={16} /> Ürünlere Dön
       </Link>
+
+      {catalogLoadError && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm">
+          {catalogLoadError}
+        </div>
+      )}
+
+      {apiError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+      )}
 
       {success && (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
           <CheckCircle size={20} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-emerald-700 text-sm font-medium">Ürün başarıyla oluşturuldu! Yönlendiriliyorsunuz...</p>
+          <p className="text-emerald-700 text-sm font-medium">
+            Ürün başarıyla oluşturuldu! Yönlendiriliyorsunuz...
+          </p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Basic Info */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
@@ -151,13 +206,23 @@ export default function ProductCreatePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-slate-700 text-sm font-medium mb-2">Ürün Adı <span className="text-red-500">*</span></label>
-              <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Örn: iPhone 15 Pro..." className={inputClass("name")} />
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Ürün Adı <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                placeholder="Örn: iPhone 15 Pro..."
+                className={inputClass("name")}
+              />
               {errors.name && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.name}</p>}
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-slate-700 text-sm font-medium mb-2">Açıklama <span className="text-red-500">*</span></label>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Açıklama <span className="text-red-500">*</span>
+              </label>
               <textarea
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
@@ -165,47 +230,57 @@ export default function ProductCreatePage() {
                 rows={4}
                 className={`w-full px-4 py-3 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.description ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
               />
-              {errors.description && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.description}</p>}
+              {errors.description && (
+                <p className="text-red-500 text-xs mt-1.5">⚠ {errors.description}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">SKU Kodu <span className="text-red-500">*</span></label>
-              <input type="text" value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="Örn: APL-IP15-256" className={inputClass("sku")} />
-              {errors.sku && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.sku}</p>}
+              <label className="block text-slate-700 text-sm font-medium mb-2">Stok kodu (SKU)</label>
+              <div className="w-full min-h-11 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 text-sm">
+                Kayıt sonrası sunucu otomatik atar (PRD-…).
+              </div>
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Barkod <span className="text-slate-400 font-normal">(isteğe bağlı)</span></label>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Barkod <span className="text-slate-400 font-normal">(isteğe bağlı)</span>
+              </label>
               <input
                 type="text"
                 inputMode="numeric"
-                autoComplete="off"
                 value={form.barcode}
                 onChange={(e) => set("barcode", e.target.value.replace(/\D/g, ""))}
-                placeholder="8–14 haneli rakam (EAN vb.)"
+                placeholder="8–14 haneli rakam"
                 maxLength={14}
                 className={inputClass("barcode")}
               />
-              <p className="text-slate-400 text-xs mt-1">Boş bırakılabilir; POS / raf için benzersiz olmalıdır.</p>
               {errors.barcode && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.barcode}</p>}
             </div>
 
-            <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Kategori <span className="text-red-500">*</span></label>
+            <div className="sm:col-span-2">
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Kategori <span className="text-red-500">*</span>
+              </label>
               <select
                 value={form.categoryId}
                 onChange={(e) => set("categoryId", e.target.value)}
-                className={`w-full h-11 px-4 rounded-xl border text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer ${errors.categoryId ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
+                className={`w-full h-11 px-4 rounded-xl border text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${errors.categoryId ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
               >
                 <option value="">Kategori seçin...</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {categories.map((c) => (
+                  <option key={c.categoryId} value={String(c.categoryId)}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
-              {errors.categoryId && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.categoryId}</p>}
+              {errors.categoryId && (
+                <p className="text-red-500 text-xs mt-1.5">⚠ {errors.categoryId}</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Pricing & Stock */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -213,77 +288,77 @@ export default function ProductCreatePage() {
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Fiyat & Stok</h2>
-              <p className="text-slate-400 text-xs">Ürün fiyatı ve stok bilgileri</p>
+              <p className="text-slate-400 text-xs">İndirimde liste fiyatı ve satış fiyatı ayrı girilir</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Fiyat (₺) <span className="text-red-500">*</span></label>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                {form.isDiscount ? "Liste fiyatı (₺) *" : "Satış fiyatı (₺) *"}
+              </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">₺</span>
-                <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="0.00" className={`w-full h-11 pl-8 pr-4 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.price ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`} />
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
+                  ₺
+                </span>
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => set("price", e.target.value)}
+                  placeholder="0.00"
+                  className={`w-full h-11 pl-8 pr-4 rounded-xl border text-slate-800 text-sm ${errors.price ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
+                />
               </div>
               {errors.price && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.price}</p>}
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Stok Miktarı <span className="text-red-500">*</span></label>
-              <input type="number" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="0" className={inputClass("stock")} />
+              <label className="block text-slate-700 text-sm font-medium mb-2">Stok *</label>
+              <input
+                type="number"
+                value={form.stock}
+                onChange={(e) => set("stock", e.target.value)}
+                placeholder="0"
+                className={inputClass("stock")}
+              />
               {errors.stock && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.stock}</p>}
             </div>
 
             <div className="flex items-end pb-0.5">
-              <label className="flex items-center gap-3 cursor-pointer select-none group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={form.isDiscount}
-                    onChange={(e) => set("isDiscount", e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-6 bg-slate-200 rounded-full peer-checked:bg-emerald-500 transition-colors" />
-                  <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
-                </div>
-                <span className="text-slate-700 text-sm font-medium group-hover:text-slate-900 transition-colors">
-                  İndirim
-                </span>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.isDiscount}
+                  onChange={(e) => set("isDiscount", e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600"
+                />
+                <span className="text-slate-700 text-sm font-medium">İndirim</span>
               </label>
             </div>
           </div>
 
           {form.isDiscount && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
-              <div className="flex items-center gap-2">
-                <Tag size={14} className="text-amber-600" />
-                <span className="text-amber-800 text-sm font-semibold">İndirim Bilgileri</span>
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+              <label className="block text-amber-900 text-sm font-medium">
+                İndirimli satış fiyatı (₺) *
+              </label>
+              <div className="relative max-w-xs">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₺</span>
+                <input
+                  type="number"
+                  value={form.discountPrice}
+                  onChange={(e) => set("discountPrice", e.target.value)}
+                  placeholder="0.00"
+                  className={`w-full h-11 pl-8 pr-4 rounded-xl border border-amber-300 bg-white text-sm ${errors.discountPrice ? "ring-2 ring-red-200" : ""}`}
+                />
               </div>
-              <div>
-                <label className="block text-amber-800 text-sm font-medium mb-2">İndirimli Satış Fiyatı (₺) <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">₺</span>
-                  <input
-                    type="number"
-                    value={form.discountPrice}
-                    onChange={(e) => set("discountPrice", e.target.value)}
-                    placeholder="0.00"
-                    className="w-full h-11 pl-8 pr-4 rounded-xl border border-amber-300 bg-white text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-              {form.price && form.discountPrice && Number(form.discountPrice) < Number(form.price) && (
-                <div className="flex items-center gap-2 text-emerald-700 text-sm font-medium">
-                  🎉 İndirim oranı: %{Math.round((1 - Number(form.discountPrice) / Number(form.price)) * 100)}
-                </div>
-              )}
-              {form.price && form.discountPrice && Number(form.discountPrice) >= Number(form.price) && (
-                <p className="text-red-600 text-xs font-medium">⚠ İndirimli fiyat, liste fiyatından düşük olmalıdır.</p>
+              {errors.discountPrice && (
+                <p className="text-red-600 text-xs">⚠ {errors.discountPrice}</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Features */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-9 h-9 bg-sky-50 rounded-xl flex items-center justify-center">
@@ -291,97 +366,56 @@ export default function ProductCreatePage() {
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Ürün Özellikleri</h2>
-              <p className="text-slate-400 text-xs">Renk, ağırlık, malzeme gibi özellikler ekleyin</p>
+              <p className="text-slate-400 text-xs">
+                Önce <strong>Özellikler</strong> kataloğunda tanımlı bir özellik seçin; değerini yazın.
+              </p>
             </div>
           </div>
 
           {features.length > 0 && (
-            <div className="space-y-1.5">
-              {features.map((feature, index) => (
-                <div
-                  key={feature.id}
-                  draggable={editingFeatureId !== feature.id}
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDrop={() => handleDrop(index)}
-                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
-                  className={`flex items-center gap-2 p-3 rounded-xl group transition-all ${
-                    dragOverIndex === index ? "bg-sky-50 border-2 border-dashed border-sky-300" :
-                    dragIndex === index ? "opacity-40 bg-slate-100" : "bg-slate-50"
-                  }`}
-                >
-                  <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0">
-                    <GripVertical size={16} />
-                  </div>
-
-                  {editingFeatureId === feature.id ? (
-                    <div className="flex-1 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={editFeatureName}
-                        onChange={(e) => setEditFeatureName(e.target.value)}
-                        className="flex-1 h-8 px-2.5 rounded-lg border border-sky-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                        autoFocus
-                      />
-                      <input
-                        type="text"
-                        value={editFeatureValue}
-                        onChange={(e) => setEditFeatureValue(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                        className="flex-1 h-8 px-2.5 rounded-lg border border-sky-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={saveEdit}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-sky-600 text-white hover:bg-sky-700 transition-all flex-shrink-0"
-                      >
-                        <Check size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingFeatureId(null)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 transition-all flex-shrink-0"
-                      >
-                        <X size={14} />
-                      </button>
+            <ul className="space-y-2">
+              {features.map((row) => {
+                const name =
+                  featureCatalog.find((f) => f.featureId === row.featureId)?.name ?? `#${row.featureId}`;
+                return (
+                  <li
+                    key={row.localId}
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                  >
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium">{name}</p>
+                      <p className="text-sm text-slate-800">{row.value}</p>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex-1 grid grid-cols-2 gap-3">
-                        <span className="text-slate-500 text-sm font-medium">{feature.name}</span>
-                        <span className="text-slate-800 text-sm">{feature.value}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(feature)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-sky-50 hover:text-sky-600 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeFeature(feature.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                      >
-                        <X size={14} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFeature(row.localId)}
+                      className="text-slate-400 hover:text-red-500 p-1"
+                    >
+                      <X size={18} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
 
-          <div className="flex items-end gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
             <div className="flex-1">
-              <label className="block text-slate-700 text-xs font-medium mb-1.5">Özellik Adı</label>
-              <input
-                type="text"
-                value={newFeatureName}
-                onChange={(e) => setNewFeatureName(e.target.value)}
-                placeholder="Örn: Renk, Ağırlık..."
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              />
+              <label className="block text-slate-700 text-xs font-medium mb-1.5">Katalog özelliği</label>
+              <select
+                value={newFeatureId}
+                onChange={(e) => setNewFeatureId(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
+              >
+                <option value="">Seçin...</option>
+                {featureCatalog
+                  .filter((f) => !usedFeatureIds.has(f.featureId))
+                  .map((f) => (
+                    <option key={f.featureId} value={String(f.featureId)}>
+                      {f.name}
+                    </option>
+                  ))}
+              </select>
             </div>
             <div className="flex-1">
               <label className="block text-slate-700 text-xs font-medium mb-1.5">Değer</label>
@@ -389,16 +423,15 @@ export default function ProductCreatePage() {
                 type="text"
                 value={newFeatureValue}
                 onChange={(e) => setNewFeatureValue(e.target.value)}
-                placeholder="Örn: Kırmızı, 2.5kg..."
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addFeature())}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                placeholder="Örn: 256 GB"
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
               />
             </div>
             <button
               type="button"
               onClick={addFeature}
-              disabled={!newFeatureName.trim() || !newFeatureValue.trim()}
-              className="h-10 px-4 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-semibold rounded-xl transition-all flex items-center gap-1.5 flex-shrink-0"
+              disabled={!newFeatureId || !newFeatureValue.trim()}
+              className="h-10 px-4 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 text-white text-sm font-semibold rounded-xl flex items-center gap-1.5"
             >
               <Plus size={15} />
               Ekle
@@ -406,7 +439,6 @@ export default function ProductCreatePage() {
           </div>
         </div>
 
-        {/* Image & Status */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
@@ -414,38 +446,49 @@ export default function ProductCreatePage() {
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Görsel & Durum</h2>
-              <p className="text-slate-400 text-xs">Ürün görseli ve yayın durumu</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
               <label className="block text-slate-700 text-sm font-medium mb-2">Görsel URL</label>
-              <input type="url" value={form.image} onChange={(e) => set("image", e.target.value)} placeholder="https://example.com/image.jpg" className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all" />
+              <input
+                type="url"
+                value={form.image}
+                onChange={(e) => set("image", e.target.value)}
+                placeholder="https://..."
+                className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm"
+              />
             </div>
-
-            {form.image && (
-              <div className="sm:col-span-2">
-                <img src={form.image} alt="Önizleme" className="w-48 h-48 object-cover rounded-xl border border-slate-200" onError={(e) => (e.currentTarget.style.display = "none")} />
-              </div>
-            )}
-
-            <div className="sm:col-span-2">
-              <label className="block text-slate-700 text-sm font-medium mb-2">Yayın Durumu</label>
+            {form.image ? (
+              <img
+                src={form.image}
+                alt=""
+                className="w-48 h-48 object-cover rounded-xl border border-slate-200"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : null}
+            <div>
+              <label className="block text-slate-700 text-sm font-medium mb-2">Yayın durumu</label>
               <div className="flex gap-3">
                 {["active", "inactive", "draft"].map((s) => {
-                  const labels: Record<string, string> = { active: "Aktif", inactive: "Pasif", draft: "Taslak" };
-                  const colors: Record<string, string> = {
-                    active: "border-emerald-500 bg-emerald-50 text-emerald-700",
-                    inactive: "border-red-300 bg-red-50 text-red-600",
-                    draft: "border-slate-300 bg-slate-50 text-slate-600",
+                  const labels: Record<string, string> = {
+                    active: "Aktif",
+                    inactive: "Pasif",
+                    draft: "Taslak",
                   };
                   return (
                     <button
                       key={s}
                       type="button"
                       onClick={() => set("status", s)}
-                      className={`flex-1 h-10 rounded-xl border-2 text-sm font-semibold transition-all ${form.status === s ? colors[s] : "border-slate-200 bg-white text-slate-400 hover:border-slate-300"}`}
+                      className={`flex-1 h-10 rounded-xl border-2 text-sm font-semibold transition-all ${
+                        form.status === s
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                          : "border-slate-200 bg-white text-slate-400"
+                      }`}
                     >
                       {labels[s]}
                     </button>
@@ -456,15 +499,23 @@ export default function ProductCreatePage() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
-          <Link href="/products" className="flex-1 h-11 flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">İptal</Link>
+          <Link
+            href="/products"
+            className="flex-1 h-11 flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+          >
+            İptal
+          </Link>
           <button
             type="submit"
             disabled={loading || success}
-            className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2"
+            className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2"
           >
-            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Ürün Oluştur"}
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              "Ürün Oluştur"
+            )}
           </button>
         </div>
       </form>

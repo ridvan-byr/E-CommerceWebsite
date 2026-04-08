@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload, CheckCircle, Tag } from "lucide-react";
+import { createCategory } from "@/lib/api/categoriesApi";
+import { ApiRequestError } from "@/lib/api/client";
 
 export default function CategoryCreatePage() {
   const router = useRouter();
@@ -11,6 +13,7 @@ export default function CategoryCreatePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -24,13 +27,25 @@ export default function CategoryCreatePage() {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
+    setApiError(null);
     if (Object.keys(errs).length > 0) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSuccess(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    router.push("/categories");
+    try {
+      await createCategory({
+        name: form.name.trim(),
+        description: form.description.trim(),
+        imageUrl: form.image.trim() || null,
+      });
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 1200));
+      router.push("/categories");
+    } catch (err) {
+      setApiError(
+        err instanceof ApiRequestError ? err.message : "Kayıt oluşturulamadı."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,6 +55,10 @@ export default function CategoryCreatePage() {
         <ArrowLeft size={16} />
         Kategorilere Dön
       </Link>
+
+      {apiError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+      )}
 
       {success && (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
