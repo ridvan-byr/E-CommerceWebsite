@@ -7,10 +7,14 @@ namespace backend.Services;
 public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly IProductFeatureRepository _productFeatureRepository;
 
-    public ProductService(IProductRepository productRepository)
+    public ProductService(
+        IProductRepository productRepository,
+        IProductFeatureRepository productFeatureRepository)
     {
         _productRepository = productRepository;
+        _productFeatureRepository = productFeatureRepository;
     }
 
     public async Task<PagedResult<ProductResponseDto>> GetAllAsync(int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
@@ -27,6 +31,8 @@ public class ProductService : IProductService
 
         var dto = MapToResponseDto(product);
         dto.CategoryName = await _productRepository.GetCategoryNameAsync(product.CategoryId, cancellationToken);
+        var featureRows = await _productFeatureRepository.GetByProductIdAsync(id, cancellationToken);
+        dto.Features = featureRows.Select(pf => new ProductFeatureResponseDto(pf)).ToList();
         return dto;
     }
 
@@ -68,24 +74,8 @@ public class ProductService : IProductService
         product.Sku = $"PRD-{product.ProductId:D7}";
         await _productRepository.SaveChangesAsync(cancellationToken);
 
-        var categoryName = await _productRepository.GetCategoryNameAsync(product.CategoryId, cancellationToken);
-
-        return new ProductResponseDto
-        {
-            ProductId = product.ProductId,
-            CategoryId = dto.CategoryId,
-            CategoryName = categoryName,
-            Name = dto.Name,
-            Description = dto.Description,
-            Sku = product.Sku,
-            Barcode = product.Barcode,
-            Price = product.Price,
-            OriginalPrice = product.OriginalPrice,
-            IsDiscount = product.IsDiscount,
-            Stock = dto.Stock,
-            Status = dto.Status,
-            ImageUrl = dto.ImageUrl
-        };
+        return await GetByIdAsync(product.ProductId, cancellationToken)
+            ?? throw new InvalidOperationException("Oluşturulan ürün okunamadı.");
     }
 
     public async Task<ProductResponseDto?> UpdateAsync(int id, UpdateProductDto dto, CancellationToken cancellationToken = default)

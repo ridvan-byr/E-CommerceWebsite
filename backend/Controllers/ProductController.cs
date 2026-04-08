@@ -26,6 +26,13 @@ public class ProductController : ControllerBase
         return Ok(list);
     }
 
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchProduct([FromQuery] ProductListFilter filter, CancellationToken cancellationToken = default)
+    {
+        var result = await _productService.SearchProductAsync(filter, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetProduct(int id, CancellationToken cancellationToken = default)
     {
@@ -94,14 +101,4 @@ public class ProductController : ControllerBase
         }
         return NoContent();
     }
-
-    [HttpGet("search")]
-    public async Task<IActionResult> SearchProduct([FromQuery] ProductListFilter filter, CancellationToken cancellationToken = default)
-    {
-        var result = await _productService.SearchProductAsync(filter, cancellationToken);
-        return Ok(result);
-    }
-
-    
-    
 }

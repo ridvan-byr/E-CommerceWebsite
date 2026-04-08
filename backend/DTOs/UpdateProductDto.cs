@@ -14,8 +14,10 @@ public class UpdateProductDto : IValidatableObject
     [MaxLength(200, ErrorMessage = "Ürün adı en fazla 200 karakter olmalıdır.")]
     public string Name { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Açıklama zorunludur.")]
+    [MinLength(1, ErrorMessage = "Açıklama boş olamaz.")]
     [MaxLength(2000, ErrorMessage = "Açıklama en fazla 2000 karakter olmalıdır.")]
-    public string? Description { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     [MaxLength(500, ErrorMessage = "Resim URL en fazla 500 karakter olmalıdır.")]
     public string? ImageUrl { get; set; }

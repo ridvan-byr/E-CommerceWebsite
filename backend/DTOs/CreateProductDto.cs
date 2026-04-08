@@ -14,8 +14,10 @@ public class CreateProductDto : IValidatableObject
     [MaxLength(200, ErrorMessage = "Ürün adı en fazla 200 karakter olmalıdır.")]
     public string Name { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Açıklama zorunludur.")]
+    [MinLength(1, ErrorMessage = "Açıklama boş olamaz.")]
     [MaxLength(2000, ErrorMessage = "Açıklama en fazla 2000 karakter olmalıdır.")]
-    public string? Description { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     [Required]
     [Range(typeof(decimal), "0.01", "79228162514264337593543950335", ErrorMessage = "Geçerli bir fiyat giriniz.")]
