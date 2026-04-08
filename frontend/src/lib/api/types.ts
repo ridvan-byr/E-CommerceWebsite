@@ -113,3 +113,17 @@ export interface UpdateProductFeaturePayload {
   value: string;
   sortOrder: number;
 }
+
+export interface UserProfileDto {
+  userId: number;
+  name: string;
+  surname: string;
+  email: string;
+  role: string;
+}
+
+export interface AuthResponseDto {
+  accessToken: string;
+  expiresAtUtc: string;
+  user: UserProfileDto;
+}
