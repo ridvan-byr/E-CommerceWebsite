@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -8,7 +9,6 @@ import {
   PlusCircle,
   Package,
   Search,
-  ShoppingCart,
   LogOut,
   ChevronRight,
   Sparkles,
@@ -69,9 +69,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           }`}
         >
           <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 flex-shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <ShoppingCart size={18} className="text-white" />
-            </div>
+            <Image
+              src="/i.webp"
+              alt="GelAl.com"
+              width={36}
+              height={36}
+              className="w-9 h-9 flex-shrink-0 rounded-xl object-cover"
+              priority
+            />
             <div className="min-w-0">
               <span className="text-white font-bold text-lg tracking-tight whitespace-nowrap">
                 GelAl.com

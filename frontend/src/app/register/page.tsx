@@ -8,32 +8,45 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  UserPlus,
   Shield,
   Zap,
   BarChart3,
-  Lock,
 } from "lucide-react";
-import { login } from "@/lib/api/authApi";
+import { register } from "@/lib/api/authApi";
 import { ApiRequestError, setStoredAccessToken } from "@/lib/api/client";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!email || !password) {
+
+    if (!name.trim() || !surname.trim() || !email.trim() || !password) {
       setError("Lütfen tüm alanları doldurun.");
       return;
     }
+    if (password.length < 8) {
+      setError("Şifre en az 8 karakter olmalıdır.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Şifreler eşleşmiyor.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await login(email.trim(), password);
+      const result = await register(name.trim(), surname.trim(), email.trim(), password);
       setStoredAccessToken(result.accessToken);
       router.push("/dashboard");
     } catch (err) {
@@ -47,7 +60,7 @@ export default function LoginPage() {
             : err.message;
         setError(msg);
       } else {
-        setError("Giriş yapılamadı. Bağlantınızı kontrol edin.");
+        setError("Kayıt olunamadı. Bağlantınızı kontrol edin.");
       }
     } finally {
       setLoading(false);
@@ -86,15 +99,15 @@ export default function LoginPage() {
         <div className="relative space-y-10">
           <div className="space-y-4">
             <h2 className="text-white text-[2.75rem] font-extrabold leading-[1.1] tracking-tight">
-              İşletmenizi
+              Hemen
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400">
-                kolayca yönetin
+                başlayın
               </span>
             </h2>
             <p className="text-slate-400 text-[15px] leading-relaxed max-w-sm">
-              Ürünlerinizi, kategorilerinizi ve siparişlerinizi tek bir yerden
-              profesyonelce yönetin. Hızlı, güvenli ve kullanıcı dostu.
+              Hesabınızı oluşturun ve e-ticaret yönetim paneline hemen erişim
+              sağlayın.
             </p>
           </div>
 
@@ -160,25 +173,56 @@ export default function LoginPage() {
             <span className="text-slate-900 font-bold text-lg">E-Ticaret</span>
           </div>
 
-          <div className="mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-6">
-              <Lock size={22} className="text-slate-600" />
+          <div className="mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-6">
+              <UserPlus size={22} className="text-indigo-600" />
             </div>
             <h1 className="text-slate-900 text-2xl font-bold tracking-tight">
-              Tekrar hoş geldiniz
+              Hesap oluşturun
             </h1>
             <p className="text-slate-500 text-sm mt-1.5">
-              Yönetim paneline erişmek için giriş yapın.
+              Bilgilerinizi girerek yeni bir hesap açın.
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-100">
                 <div className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0 mt-1.5" />
                 <p className="text-red-700 text-sm leading-snug">{error}</p>
               </div>
             )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 text-sm font-medium mb-1.5">
+                  Ad
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Adınız"
+                  autoComplete="given-name"
+                  disabled={loading}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 text-sm font-medium mb-1.5">
+                  Soyad
+                </label>
+                <input
+                  type="text"
+                  value={surname}
+                  onChange={(e) => setSurname(e.target.value)}
+                  placeholder="Soyadınız"
+                  autoComplete="family-name"
+                  disabled={loading}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
+                />
+              </div>
+            </div>
 
             <div>
               <label className="block text-slate-700 text-sm font-medium mb-1.5">
@@ -196,22 +240,16 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-slate-700 text-sm font-medium">Şifre</label>
-                <Link
-                  href="/forgot-password"
-                  className="text-indigo-600 text-xs font-medium hover:text-indigo-700 transition-colors"
-                >
-                  Şifremi unuttum
-                </Link>
-              </div>
+              <label className="block text-slate-700 text-sm font-medium mb-1.5">
+                Şifre
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
+                  placeholder="En az 8 karakter"
+                  autoComplete="new-password"
                   disabled={loading}
                   className="w-full h-11 px-3.5 pr-11 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
                 />
@@ -226,6 +264,21 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-slate-700 text-sm font-medium mb-1.5">
+                Şifre tekrar
+              </label>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Şifrenizi tekrar girin"
+                autoComplete="new-password"
+                disabled={loading}
+                className="w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
+              />
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -235,7 +288,7 @@ export default function LoginPage() {
                 <div className="w-4.5 h-4.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Giriş yap
+                  Kayıt ol
                   <ArrowRight size={16} />
                 </>
               )}
@@ -243,12 +296,12 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-sm text-slate-500 mt-8">
-            Hesabınız yok mu?{" "}
+            Zaten hesabınız var mı?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              Kayıt olun
+              Giriş yapın
             </Link>
           </p>
 
