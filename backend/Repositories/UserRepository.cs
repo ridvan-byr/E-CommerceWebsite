@@ -37,6 +37,18 @@ public class UserRepository : IUserRepository
         await _context.Users.AddAsync(user, cancellationToken);
     }
 
+    public async Task<User?> GetByEmailTrackingAsync(string normalizedEmail, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
+    }
+
+    public async Task<User?> GetByResetTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.PasswordResetToken == token, cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _context.SaveChangesAsync(cancellationToken);
 }

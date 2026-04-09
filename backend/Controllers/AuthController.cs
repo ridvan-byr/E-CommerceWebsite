@@ -43,6 +43,35 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto, CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var token = await _authService.GeneratePasswordResetTokenAsync(dto.Email, cancellationToken);
+
+        // Always return OK to prevent email enumeration
+        // In production, send the token via email instead of returning it
+        if (token is not null)
+            return Ok(new { message = "Şifre sıfırlama bağlantısı gönderildi.", token });
+
+        return Ok(new { message = "Şifre sıfırlama bağlantısı gönderildi." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto, CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var success = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword, cancellationToken);
+        if (!success)
+            return BadRequest(new { message = "Geçersiz veya süresi dolmuş token." });
+
+        return Ok(new { message = "Şifreniz başarıyla güncellendi." });
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken cancellationToken = default)

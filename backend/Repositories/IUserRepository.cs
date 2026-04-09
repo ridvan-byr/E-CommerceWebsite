@@ -12,5 +12,9 @@ public interface IUserRepository
 
     Task AddAsync(User user, CancellationToken cancellationToken = default);
 
+    Task<User?> GetByEmailTrackingAsync(string normalizedEmail, CancellationToken cancellationToken = default);
+
+    Task<User?> GetByResetTokenAsync(string token, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

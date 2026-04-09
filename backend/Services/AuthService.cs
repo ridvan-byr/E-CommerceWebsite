@@ -117,5 +117,38 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    public async Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalized = NormalizeEmail(email);
+        var user = await _userRepository.GetByEmailTrackingAsync(normalized, cancellationToken);
+        if (user is null || !user.IsActive)
+            return null;
+
+        var token = Guid.NewGuid().ToString("N");
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return token;
+    }
+
+    public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByResetTokenAsync(token, cancellationToken);
+        if (user is null)
+            return false;
+
+        if (user.PasswordResetTokenExpiry is null || user.PasswordResetTokenExpiry < DateTime.UtcNow)
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
+
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 }
