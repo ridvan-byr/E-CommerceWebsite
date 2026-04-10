@@ -34,8 +34,6 @@ public class CategoryService : ICategoryService
         var category = new Category
         {
             Name = dto.Name,
-            Description = dto.Description,
-            ImageUrl = dto.ImageUrl,
             CreatedBy = "System",
             CreatedAt = DateTime.UtcNow,
             IsDeleted = false,
@@ -50,8 +48,6 @@ public class CategoryService : ICategoryService
         {
             CategoryId = category.CategoryId,
             Name = category.Name,
-            Description = category.Description,
-            ImageUrl = category.ImageUrl,
             ProductCount = 0,
             IsDeleted = category.IsDeleted,
             CreatedBy = category.CreatedBy,
@@ -68,8 +64,6 @@ public class CategoryService : ICategoryService
             return null;
 
         category.Name = dto.Name;
-        category.Description = dto.Description;
-        category.ImageUrl = dto.ImageUrl;
         category.UpdatedAt = DateTime.UtcNow;
         category.UpdatedBy = "System";
 
@@ -95,8 +89,6 @@ public class CategoryService : ICategoryService
     {
         CategoryId = c.CategoryId,
         Name = c.Name,
-        Description = c.Description,
-        ImageUrl = c.ImageUrl,
         ProductCount = c.Products.Count,
         IsDeleted = c.IsDeleted,
         CreatedBy = c.CreatedBy,

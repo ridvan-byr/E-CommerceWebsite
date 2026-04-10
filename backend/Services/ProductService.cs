@@ -36,24 +36,28 @@ public class ProductService : IProductService
         return dto;
     }
 
-    public async Task<ProductResponseDto?> CreateAsync(CreateProductDto dto, CancellationToken cancellationToken = default)
+    public async Task<ProductMutationResult> CreateAsync(CreateProductDto dto, CancellationToken cancellationToken = default)
     {
         var categoryExists = await _productRepository.CategoryExistsActiveAsync(dto.CategoryId, cancellationToken);
         if (!categoryExists)
-            return null;
+            return new ProductMutationResult(null, ProductMutationError.InvalidCategory);
+
+        var sku = NormalizeSku(dto.Sku);
+        if (await _productRepository.IsSkuTakenAsync(sku, excludeProductId: null, cancellationToken))
+            return new ProductMutationResult(null, ProductMutationError.DuplicateSku);
 
         var normalizedBarcode = NormalizeBarcode(dto.Barcode);
 
         if (normalizedBarcode is not null
             && await _productRepository.IsBarcodeTakenAsync(normalizedBarcode, excludeProductId: null, cancellationToken))
-            return null;
+            return new ProductMutationResult(null, ProductMutationError.DuplicateBarcode);
 
         var product = new Product
         {
             CategoryId = dto.CategoryId,
             Name = dto.Name,
             Description = dto.Description,
-            Sku = "TMP-" + Guid.NewGuid().ToString("N"),
+            Sku = sku,
             Barcode = normalizedBarcode,
             Price = dto.Price,
             OriginalPrice = dto.IsDiscount ? dto.OriginalPrice : null,
@@ -71,35 +75,40 @@ public class ProductService : IProductService
         await _productRepository.AddAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 
-        product.Sku = $"PRD-{product.ProductId:D7}";
-        await _productRepository.SaveChangesAsync(cancellationToken);
-
-        return await GetByIdAsync(product.ProductId, cancellationToken)
-            ?? throw new InvalidOperationException("Oluşturulan ürün okunamadı.");
+        var created = await GetByIdAsync(product.ProductId, cancellationToken);
+        if (created is null)
+            return new ProductMutationResult(null, ProductMutationError.NotFound);
+        return new ProductMutationResult(created, ProductMutationError.None);
     }
 
-    public async Task<ProductResponseDto?> UpdateAsync(int id, UpdateProductDto dto, CancellationToken cancellationToken = default)
+    public async Task<ProductMutationResult> UpdateAsync(int id, UpdateProductDto dto, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetTrackedActiveByIdAsync(id, cancellationToken);
         if (product is null)
-            return null;
+            return new ProductMutationResult(null, ProductMutationError.NotFound);
 
         if (dto.CategoryId != product.CategoryId)
         {
             var ok = await _productRepository.CategoryExistsActiveAsync(dto.CategoryId, cancellationToken);
             if (!ok)
-                return null;
+                return new ProductMutationResult(null, ProductMutationError.InvalidCategory);
         }
+
+        var sku = NormalizeSku(dto.Sku);
+        if (sku != product.Sku
+            && await _productRepository.IsSkuTakenAsync(sku, excludeProductId: id, cancellationToken))
+            return new ProductMutationResult(null, ProductMutationError.DuplicateSku);
 
         var normalizedBarcode = NormalizeBarcode(dto.Barcode);
         if (normalizedBarcode != product.Barcode
             && normalizedBarcode is not null
             && await _productRepository.IsBarcodeTakenAsync(normalizedBarcode, excludeProductId: id, cancellationToken))
-            return null;
+            return new ProductMutationResult(null, ProductMutationError.DuplicateBarcode);
 
         product.CategoryId = dto.CategoryId;
         product.Name = dto.Name;
         product.Description = dto.Description;
+        product.Sku = sku;
         product.Barcode = normalizedBarcode;
         product.Price = dto.Price;
         product.OriginalPrice = dto.IsDiscount ? dto.OriginalPrice : null;
@@ -112,7 +121,10 @@ public class ProductService : IProductService
 
         await _productRepository.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(id, cancellationToken);
+        var updated = await GetByIdAsync(id, cancellationToken);
+        if (updated is null)
+            return new ProductMutationResult(null, ProductMutationError.NotFound);
+        return new ProductMutationResult(updated, ProductMutationError.None);
     }
 
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -184,6 +196,9 @@ public class ProductService : IProductService
         UpdatedBy = product.UpdatedBy,
         UpdatedAt = product.UpdatedAt,
     };
+
+    private static string NormalizeSku(string value) =>
+        string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
 
     private static string? NormalizeBarcode(string? value)
     {

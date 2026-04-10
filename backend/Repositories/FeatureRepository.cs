@@ -42,4 +42,46 @@ public class FeatureRepository : IFeatureRepository
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);
+
+    public async Task<Feature> GetOrCreateActiveByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var trimmed = (name ?? string.Empty).Trim();
+        if (trimmed.Length == 0)
+            throw new ArgumentException("Özellik adı boş olamaz.", nameof(name));
+
+        var existing = await _context.Features
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                f => !f.IsDeleted && f.Name.ToLower() == trimmed.ToLower(),
+                cancellationToken);
+
+        if (existing != null)
+            return existing;
+
+        var entity = new Feature
+        {
+            Name = trimmed,
+            IsDeleted = false,
+            CreatedBy = "System",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        await _context.Features.AddAsync(entity, cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return entity;
+        }
+        catch (DbUpdateException)
+        {
+            var again = await _context.Features
+                .AsNoTracking()
+                .FirstOrDefaultAsync(
+                    f => !f.IsDeleted && f.Name.ToLower() == trimmed.ToLower(),
+                    cancellationToken);
+            if (again != null)
+                return again;
+            throw;
+        }
+    }
 }

@@ -8,11 +8,4 @@ public class UpdateCategoryDto
     [MinLength(2, ErrorMessage = "Kategori adı en az 2 karakter olmalıdır.")]
     [MaxLength(100, ErrorMessage = "Kategori adı en fazla 100 karakter olmalıdır.")]
     public string Name { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Açıklama zorunludur.")]
-    [MinLength(1, ErrorMessage = "Açıklama boş olamaz.")]
-    [MaxLength(2000, ErrorMessage = "Açıklama en fazla 2000 karakter olmalıdır.")]
-    public string Description { get; set; } = string.Empty;
-
-    public string? ImageUrl { get; set; }
 }

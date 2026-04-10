@@ -10,6 +10,7 @@ public interface IProductRepository
     Task<Product?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<bool> CategoryExistsActiveAsync(int categoryId, CancellationToken cancellationToken = default);
     Task<bool> IsBarcodeTakenAsync(string barcode, int? excludeProductId, CancellationToken ct = default);
+    Task<bool> IsSkuTakenAsync(string sku, int? excludeProductId, CancellationToken ct = default);
     Task<string?> GetCategoryNameAsync(int categoryId, CancellationToken cancellationToken = default);
     Task<IReadOnlyDictionary<int, string>> GetCategoryNamesByIdsAsync(
         IEnumerable<int> categoryIds,

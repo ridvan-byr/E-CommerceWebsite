@@ -5,17 +5,20 @@ namespace backend.DTOs;
 
 public class CreateProductPriceDto : IValidatableObject
 {
-    [Required]
-    [Range(typeof(decimal), "0.01", "79228162514264337593543950335", ErrorMessage = "Geçerli bir fiyat giriniz.")]
+    [Required(ErrorMessage = "Fiyat zorunludur.")]
     public decimal Price { get; set; }
 
-    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
     public decimal? OriginalPrice { get; set; }
 
     public bool IsDiscount { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (Price <= 0)
+            yield return new ValidationResult("Geçerli bir fiyat giriniz.", [nameof(Price)]);
+        if (OriginalPrice.HasValue && OriginalPrice.Value < 0)
+            yield return new ValidationResult("Liste fiyatı negatif olamaz.", [nameof(OriginalPrice)]);
+
         if (IsDiscount)
         {
             if (OriginalPrice is not decimal op || op <= 0)

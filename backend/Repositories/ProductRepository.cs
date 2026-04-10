@@ -37,7 +37,19 @@ public class ProductRepository : IProductRepository
     {
         var q = _context.Products
             .AsNoTracking()
-            .Where(c => c.Barcode == barcode);
+            .Where(p => p.Barcode == barcode && !p.IsDeleted);
+
+        if (excludeProductId is int x)
+            q = q.Where(p => p.ProductId != x);
+
+        return q.AnyAsync(cancellationToken);
+    }
+
+    public Task<bool> IsSkuTakenAsync(string sku, int? excludeProductId, CancellationToken cancellationToken = default)
+    {
+        var q = _context.Products
+            .AsNoTracking()
+            .Where(p => p.Sku == sku && !p.IsDeleted);
 
         if (excludeProductId is int x)
             q = q.Where(p => p.ProductId != x);
@@ -55,16 +67,19 @@ public class ProductRepository : IProductRepository
         IEnumerable<int> categoryIds,
         CancellationToken cancellationToken = default)
     {
-        var ids = categoryIds.Distinct().ToArray();
-        if (ids.Length == 0)
+        var ids = categoryIds.Distinct().ToHashSet();
+        if (ids.Count == 0)
             return new Dictionary<int, string>();
 
+        
         var rows = await _context.Categories.AsNoTracking()
-            .Where(c => ids.Contains(c.CategoryId) && !c.IsDeleted)
+            .Where(c => !c.IsDeleted)
             .Select(c => new { c.CategoryId, c.Name })
             .ToListAsync(cancellationToken);
 
-        return rows.ToDictionary(x => x.CategoryId, x => x.Name);
+        return rows
+            .Where(r => ids.Contains(r.CategoryId))
+            .ToDictionary(x => x.CategoryId, x => x.Name);
     }
 
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)

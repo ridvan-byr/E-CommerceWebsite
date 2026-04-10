@@ -45,11 +45,9 @@ public class ProductFeatureService : IProductFeatureService
         if (product is null)
             return null;
 
-        var feature = await _featureRepository.GetFeatureByIdAsync(dto.FeatureId, cancellationToken);
-        if (feature is null)
-            return null;
+        var feature = await _featureRepository.GetOrCreateActiveByNameAsync(dto.Name, cancellationToken);
 
-        if (await _productFeatureRepository.ExistsAsync(productId, dto.FeatureId, null, cancellationToken))
+        if (await _productFeatureRepository.ExistsAsync(productId, feature.FeatureId, null, cancellationToken))
             return null;
 
         var sortOrder = dto.SortOrder ?? await NextSortOrderAsync(productId, cancellationToken);
@@ -57,8 +55,8 @@ public class ProductFeatureService : IProductFeatureService
         var entity = new ProductFeature
         {
             ProductId = productId,
-            FeatureId = dto.FeatureId,
-            Value = dto.Value,
+            FeatureId = feature.FeatureId,
+            Value = dto.Value.Trim(),
             SortOrder = sortOrder,
             CreatedBy = "System",
             CreatedAt = DateTime.UtcNow,
@@ -81,7 +79,23 @@ public class ProductFeatureService : IProductFeatureService
         if (pf is null || pf.ProductId != productId)
             return null;
 
-        pf.Value = dto.Value;
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            var want = dto.Name.Trim();
+            var current = await _featureRepository.GetFeatureByIdAsync(pf.FeatureId, cancellationToken);
+            var currentName = current?.Name.Trim() ?? string.Empty;
+            if (!string.Equals(want, currentName, StringComparison.OrdinalIgnoreCase))
+            {
+                var feature = await _featureRepository.GetOrCreateActiveByNameAsync(want, cancellationToken);
+                if (feature.FeatureId != pf.FeatureId
+                    && await _productFeatureRepository.ExistsAsync(productId, feature.FeatureId, productFeatureId, cancellationToken))
+                    return null;
+
+                pf.FeatureId = feature.FeatureId;
+            }
+        }
+
+        pf.Value = dto.Value.Trim();
         pf.SortOrder = dto.SortOrder;
         pf.UpdatedAt = DateTime.UtcNow;
         pf.UpdatedBy = "System";

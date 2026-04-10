@@ -41,7 +41,7 @@ public class ProductFeatureController : ControllerBase
 
         var created = await _productFeatureService.CreateAsync(productId, dto, cancellationToken);
         if (created is null)
-            return BadRequest(new { message = "Ürün veya özellik bulunamadı veya bu özellik ürüne zaten eklenmiş." });
+            return BadRequest(new { message = "Ürün bulunamadı veya bu özellik adı bu üründe zaten tanımlı." });
 
         return CreatedAtAction(nameof(GetById), new { productId, productFeatureId = created.ProductFeatureId }, created);
     }

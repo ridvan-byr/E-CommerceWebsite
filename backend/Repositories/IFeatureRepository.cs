@@ -13,6 +13,11 @@ namespace backend.Repositories
         Task AddAsync(Feature feature,CancellationToken cancellationToken = default);
         Task<Feature?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// İsme göre aktif özellik döner; yoksa oluşturur (benzersiz isim, yoksa yarışta tekrar okur).
+        /// </summary>
+        Task<Feature> GetOrCreateActiveByNameAsync(string name, CancellationToken cancellationToken = default);
     }
 
 }

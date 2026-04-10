@@ -1,10 +1,17 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
+using backend.Validation;
 
 namespace backend.DTOs;
 
 public class CreateProductDto : IValidatableObject
 {
+    private static readonly Regex SkuPattern = new(
+        @"^[A-Z0-9][A-Z0-9._\-/]{0,48}[A-Z0-9]$",
+        RegexOptions.Compiled,
+        TimeSpan.FromMilliseconds(100));
+
     [Required(ErrorMessage = "Kategori seçilmelidir.")]
     [Range(1, int.MaxValue, ErrorMessage = "Geçerli bir kategori seçiniz.")]
     public int CategoryId { get; set; }
@@ -19,11 +26,16 @@ public class CreateProductDto : IValidatableObject
     [MaxLength(2000, ErrorMessage = "Açıklama en fazla 2000 karakter olmalıdır.")]
     public string Description { get; set; } = string.Empty;
 
-    [Required]
-    [Range(typeof(decimal), "0.01", "79228162514264337593543950335", ErrorMessage = "Geçerli bir fiyat giriniz.")]
+    /// <summary>
+    /// Merchant stock keeping unit — unique per active product (letters, digits, . _ - /).
+    /// </summary>
+    [Required(ErrorMessage = "SKU (stok kodu) zorunludur.")]
+    [MaxLength(50, ErrorMessage = "SKU en fazla 50 karakter olabilir.")]
+    public string Sku { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Fiyat zorunludur.")]
     public decimal Price { get; set; }
 
-    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
     public decimal? OriginalPrice { get; set; }
 
     public bool IsDiscount { get; set; }
@@ -40,11 +52,40 @@ public class CreateProductDto : IValidatableObject
     public string? ImageUrl { get; set; }
 
     [MaxLength(32, ErrorMessage = "Barkod en fazla 32 karakter olabilir.")]
-    [RegularExpression(@"^$|^[0-9]{8,14}$", ErrorMessage = "Barkod boş bırakılabilir veya 8–14 haneli rakam olmalıdır.")]
     public string? Barcode { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (Price <= 0)
+            yield return new ValidationResult("Geçerli bir fiyat giriniz.", [nameof(Price)]);
+        if (OriginalPrice.HasValue && OriginalPrice.Value < 0)
+            yield return new ValidationResult("Liste fiyatı negatif olamaz.", [nameof(OriginalPrice)]);
+
+        var sku = Sku?.Trim();
+        if (string.IsNullOrEmpty(sku) || sku.Length < 2)
+        {
+            yield return new ValidationResult(
+                "SKU en az 2 karakter olmalıdır.",
+                [nameof(Sku)]);
+        }
+        else
+        {
+            var skuUpper = sku.ToUpperInvariant();
+            if (skuUpper.Length > 50 || !SkuPattern.IsMatch(skuUpper))
+            {
+                yield return new ValidationResult(
+                    "SKU harf ve rakam içermeli; nokta, tire, alt çizgi ve / kullanılabilir (ör. NIKE-AIR-42-BLK).",
+                    [nameof(Sku)]);
+            }
+        }
+
+        if (!GtinValidator.IsValidOrEmpty(Barcode))
+        {
+            yield return new ValidationResult(
+                "Geçersiz GTIN barkodu (8, 12, 13 veya 14 hane ve doğru check digit).",
+                [nameof(Barcode)]);
+        }
+
         if (IsDiscount)
         {
             if (OriginalPrice is not decimal op || op <= 0)

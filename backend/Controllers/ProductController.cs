@@ -55,15 +55,21 @@ public class ProductController : ControllerBase
 
 
         var result = await _productService.CreateAsync(dto, cancellationToken);
-        if (result is null)
+        if (result.Error != ProductMutationError.None)
         {
-            return BadRequest(new
+            if (result.Error == ProductMutationError.NotFound)
+                return NotFound();
+            var message = result.Error switch
             {
-                message = "Ürün oluşturulamadı: kategori geçersiz veya silinmiş, barkod başka üründe kayıtlı olabilir."
-            });
+                ProductMutationError.DuplicateSku => "Bu stok kodu (SKU) başka bir aktif üründe kullanılıyor.",
+                ProductMutationError.DuplicateBarcode => "Bu barkod başka bir aktif üründe kullanılıyor.",
+                ProductMutationError.InvalidCategory => "Kategori bulunamadı veya silinmiş.",
+                _ => "Ürün oluşturulamadı."
+            };
+            return BadRequest(new { message });
         }
 
-        return CreatedAtAction(nameof(GetProduct), new { id = result.ProductId }, result);
+        return CreatedAtAction(nameof(GetProduct), new { id = result.Product!.ProductId }, result.Product);
     }
 
 
@@ -80,15 +86,21 @@ public class ProductController : ControllerBase
             return NotFound();
 
         var result = await _productService.UpdateAsync(id, dto, cancellationToken);
-        if (result is null)
+        if (result.Error != ProductMutationError.None)
         {
-            return BadRequest(new
+            if (result.Error == ProductMutationError.NotFound)
+                return NotFound();
+            var message = result.Error switch
             {
-                message = "Güncelleme reddedildi: kategori geçersiz veya barkod başka üründe kayıtlı olabilir."
-            });
+                ProductMutationError.DuplicateSku => "Bu stok kodu (SKU) başka bir aktif üründe kullanılıyor.",
+                ProductMutationError.DuplicateBarcode => "Bu barkod başka bir aktif üründe kullanılıyor.",
+                ProductMutationError.InvalidCategory => "Kategori bulunamadı veya silinmiş.",
+                _ => "Güncelleme reddedildi."
+            };
+            return BadRequest(new { message });
         }
 
-        return Ok(result);
+        return Ok(result.Product);
     }
 
     [HttpDelete("{id:int}")]
