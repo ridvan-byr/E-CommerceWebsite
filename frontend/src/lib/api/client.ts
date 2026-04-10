@@ -17,6 +17,30 @@ export function setStoredAccessToken(token: string | null): void {
 
 export type ApiErrorBody = { message?: string; errors?: Record<string, string[]> };
 
+/** ASP.NET ValidationProblemDetails / ModelState yanıtlarından okunabilir metin üretir. */
+function formatErrorMessage(parsed: unknown, fallback: string): string {
+  if (parsed == null || typeof parsed !== "object") return fallback;
+  const o = parsed as Record<string, unknown>;
+  const direct = o.message ?? o.title;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+
+  const errors = o.errors;
+  if (errors && typeof errors === "object" && !Array.isArray(errors)) {
+    const parts: string[] = [];
+    for (const [, msgs] of Object.entries(errors as Record<string, unknown>)) {
+      if (Array.isArray(msgs)) {
+        for (const m of msgs) {
+          if (typeof m === "string") parts.push(m);
+        }
+      } else if (typeof msgs === "string") {
+        parts.push(msgs);
+      }
+    }
+    if (parts.length) return parts.join(" ");
+  }
+  return fallback;
+}
+
 export class ApiRequestError extends Error {
   constructor(
     message: string,
@@ -55,10 +79,7 @@ export async function apiRequest<T>(
     } catch {
       parsed = text;
     }
-    const msg =
-      typeof parsed === "object" && parsed !== null && "message" in parsed
-        ? String((parsed as { message?: string }).message)
-        : res.statusText;
+    const msg = formatErrorMessage(parsed, res.statusText);
     throw new ApiRequestError(msg || `HTTP ${res.status}`, res.status, parsed);
   }
 

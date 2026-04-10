@@ -15,6 +15,16 @@
   }
 }
 
+/* Ürün listesi toast — sadece transform/opacity (hafif) */
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f1f5f9;

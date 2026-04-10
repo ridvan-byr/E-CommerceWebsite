@@ -14,23 +14,23 @@ import {
   Layers,
 } from "lucide-react";
 import { fetchCategories } from "@/lib/api/categoriesApi";
-import { fetchFeatureDefinitions } from "@/lib/api/featuresApi";
 import { createProduct } from "@/lib/api/productsApi";
 import { createProductFeature } from "@/lib/api/productFeaturesApi";
-import type { CategoryDto, FeatureDefinitionDto } from "@/lib/api/types";
+import type { CategoryDto } from "@/lib/api/types";
 import { ApiRequestError } from "@/lib/api/client";
+import { isValidGtinOrEmpty, isValidSku } from "@/lib/gtin";
 
-type FeatureRow = { localId: number; featureId: number; value: string };
+type FeatureRow = { localId: number; name: string; value: string };
 
 export default function ProductCreatePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<CategoryDto[]>([]);
-  const [featureCatalog, setFeatureCatalog] = useState<FeatureDefinitionDto[]>([]);
   const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
     description: "",
+    sku: "",
     price: "",
     discountPrice: "",
     stock: "",
@@ -41,7 +41,7 @@ export default function ProductCreatePage() {
     isDiscount: false,
   });
   const [features, setFeatures] = useState<FeatureRow[]>([]);
-  const [newFeatureId, setNewFeatureId] = useState("");
+  const [newFeatureName, setNewFeatureName] = useState("");
   const [newFeatureValue, setNewFeatureValue] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -55,16 +55,10 @@ export default function ProductCreatePage() {
     let cancelled = false;
     (async () => {
       try {
-        const [cats, feats] = await Promise.all([
-          fetchCategories(),
-          fetchFeatureDefinitions(),
-        ]);
-        if (!cancelled) {
-          setCategories(cats);
-          setFeatureCatalog(feats.filter((f) => !f.isDeleted));
-        }
+        const cats = await fetchCategories();
+        if (!cancelled) setCategories(cats);
       } catch {
-        if (!cancelled) setCatalogLoadError("Kategori veya özellik listesi yüklenemedi.");
+        if (!cancelled) setCatalogLoadError("Kategori listesi yüklenemedi.");
       }
     })();
     return () => {
@@ -73,14 +67,17 @@ export default function ProductCreatePage() {
   }, []);
 
   const addFeature = () => {
-    const fid = Number(newFeatureId);
-    if (!fid || !newFeatureValue.trim()) return;
-    if (features.some((r) => r.featureId === fid)) return;
+    const label = newFeatureName.trim();
+    if (!label || !newFeatureValue.trim()) return;
+    if (features.some((r) => r.name.trim().toLowerCase() === label.toLowerCase())) {
+      alert("Bu özellik adı zaten eklendi.");
+      return;
+    }
     setFeatures((prev) => [
       ...prev,
-      { localId: Date.now(), featureId: fid, value: newFeatureValue.trim() },
+      { localId: Date.now(), name: label, value: newFeatureValue.trim() },
     ]);
-    setNewFeatureId("");
+    setNewFeatureName("");
     setNewFeatureValue("");
   };
 
@@ -95,9 +92,14 @@ export default function ProductCreatePage() {
     if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0)
       e.stock = "Geçerli bir stok miktarı giriniz.";
     if (!form.categoryId) e.categoryId = "Kategori seçimi zorunludur.";
+    if (!isValidSku(form.sku)) {
+      e.sku =
+        "SKU zorunludur (2–50 karakter): harf/rakam ve . _ - / (ör. NIKE-AIR-42-BLK).";
+    }
     const bc = form.barcode.trim();
-    if (bc && !/^[0-9]{8,14}$/.test(bc)) {
-      e.barcode = "Barkod boş bırakılabilir veya 8–14 haneli rakam olmalıdır.";
+    if (bc && !isValidGtinOrEmpty(form.barcode)) {
+      e.barcode =
+        "Geçerli GTIN girin (8, 12, 13 veya 14 hane, doğru check digit) veya boş bırakın.";
     }
     if (form.isDiscount) {
       const list = Number(form.price);
@@ -130,6 +132,7 @@ export default function ProductCreatePage() {
         categoryId,
         name: form.name.trim(),
         description: form.description.trim(),
+        sku: form.sku.trim(),
         price: salePrice,
         originalPrice: form.isDiscount ? listPrice : null,
         isDiscount: form.isDiscount,
@@ -142,7 +145,7 @@ export default function ProductCreatePage() {
       for (let i = 0; i < features.length; i++) {
         const row = features[i];
         await createProductFeature(created.productId, {
-          featureId: row.featureId,
+          name: row.name,
           value: row.value,
           sortOrder: i,
         });
@@ -161,8 +164,6 @@ export default function ProductCreatePage() {
 
   const inputClass = (field: string) =>
     `w-full h-11 px-4 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors[field] ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`;
-
-  const usedFeatureIds = new Set(features.map((f) => f.featureId));
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -236,25 +237,40 @@ export default function ProductCreatePage() {
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Stok kodu (SKU)</label>
-              <div className="w-full min-h-11 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 text-sm">
-                Kayıt sonrası sunucu otomatik atar (PRD-…).
-              </div>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Stok kodu (SKU) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.sku}
+                onChange={(e) => set("sku", e.target.value)}
+                placeholder="Örn: SAM-GS24U-512-BLK"
+                maxLength={50}
+                autoComplete="off"
+                className={inputClass("sku")}
+              />
+              <p className="text-slate-400 text-[11px] mt-1">
+                Mağaza içi benzersiz kod; harf, rakam ve . _ - / kullanılabilir.
+              </p>
+              {errors.sku && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.sku}</p>}
             </div>
 
             <div>
               <label className="block text-slate-700 text-sm font-medium mb-2">
-                Barkod <span className="text-slate-400 font-normal">(isteğe bağlı)</span>
+                Barkod (GTIN) <span className="text-slate-400 font-normal">(isteğe bağlı)</span>
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 value={form.barcode}
                 onChange={(e) => set("barcode", e.target.value.replace(/\D/g, ""))}
-                placeholder="8–14 haneli rakam"
+                placeholder="EAN-13 / GTIN (check digit dahil)"
                 maxLength={14}
                 className={inputClass("barcode")}
               />
+              <p className="text-slate-400 text-[11px] mt-1">
+                GS1 barkodu; 8, 12, 13 veya 14 hane, doğrulama hanesi kontrol edilir.
+              </p>
               {errors.barcode && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.barcode}</p>}
             </div>
 
@@ -367,7 +383,7 @@ export default function ProductCreatePage() {
             <div>
               <h2 className="text-slate-900 font-semibold">Ürün Özellikleri</h2>
               <p className="text-slate-400 text-xs">
-                Önce <strong>Özellikler</strong> kataloğunda tanımlı bir özellik seçin; değerini yazın.
+                Özellik adı ve değerini yazıp listeye ekleyin; ürün kaydedildiğinde sunucuya yazılır.
               </p>
             </div>
           </div>
@@ -375,15 +391,13 @@ export default function ProductCreatePage() {
           {features.length > 0 && (
             <ul className="space-y-2">
               {features.map((row) => {
-                const name =
-                  featureCatalog.find((f) => f.featureId === row.featureId)?.name ?? `#${row.featureId}`;
                 return (
                   <li
                     key={row.localId}
                     className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
                   >
                     <div>
-                      <p className="text-xs text-slate-500 font-medium">{name}</p>
+                      <p className="text-xs text-slate-500 font-medium">{row.name}</p>
                       <p className="text-sm text-slate-800">{row.value}</p>
                     </div>
                     <button
@@ -399,39 +413,33 @@ export default function ProductCreatePage() {
             </ul>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-            <div className="flex-1">
-              <label className="block text-slate-700 text-xs font-medium mb-1.5">Katalog özelliği</label>
-              <select
-                value={newFeatureId}
-                onChange={(e) => setNewFeatureId(e.target.value)}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 sm:items-end">
+            <div>
+              <label className="block text-slate-700 text-xs font-medium mb-1.5">Özellik adı</label>
+              <input
+                type="text"
+                value={newFeatureName}
+                onChange={(e) => setNewFeatureName(e.target.value)}
+                placeholder="Örn: RAM, Renk"
+                maxLength={100}
                 className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
-              >
-                <option value="">Seçin...</option>
-                {featureCatalog
-                  .filter((f) => !usedFeatureIds.has(f.featureId))
-                  .map((f) => (
-                    <option key={f.featureId} value={String(f.featureId)}>
-                      {f.name}
-                    </option>
-                  ))}
-              </select>
+              />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="block text-slate-700 text-xs font-medium mb-1.5">Değer</label>
               <input
                 type="text"
                 value={newFeatureValue}
                 onChange={(e) => setNewFeatureValue(e.target.value)}
-                placeholder="Örn: 256 GB"
+                placeholder="Örn: 8 GB, Siyah"
                 className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
               />
             </div>
             <button
               type="button"
               onClick={addFeature}
-              disabled={!newFeatureId || !newFeatureValue.trim()}
-              className="h-10 px-4 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 text-white text-sm font-semibold rounded-xl flex items-center gap-1.5"
+              disabled={!newFeatureName.trim() || !newFeatureValue.trim()}
+              className="h-10 px-4 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 sm:shrink-0"
             >
               <Plus size={15} />
               Ekle

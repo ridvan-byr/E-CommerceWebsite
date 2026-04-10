@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -11,6 +11,8 @@ import {
   SlidersHorizontal,
   Eye,
   Loader2,
+  CheckCircle,
+  X,
 } from "lucide-react";
 import { searchProducts, deleteProduct } from "@/lib/api/productsApi";
 import { fetchCategories } from "@/lib/api/categoriesApi";
@@ -35,6 +37,60 @@ export default function ProductsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [listFlash, setListFlash] = useState<{ productName: string } | null>(null);
+  const [toastEnter, setToastEnter] = useState(false);
+  const [toastExiting, setToastExiting] = useState(false);
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem("ecommerce_products_flash");
+      if (!raw) return;
+      sessionStorage.removeItem("ecommerce_products_flash");
+      const data = JSON.parse(raw) as { variant?: string; productName?: string };
+      if (!data.productName || data.variant !== "product-update") return;
+      setListFlash({ productName: data.productName });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const closeToast = useCallback(() => {
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+    setToastExiting(true);
+    window.setTimeout(() => {
+      setListFlash(null);
+      setToastExiting(false);
+      setToastEnter(false);
+    }, 280);
+  }, []);
+
+  useEffect(() => {
+    if (!listFlash) return;
+    setToastExiting(false);
+    setToastEnter(false);
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setToastEnter(true));
+    });
+    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    autoCloseTimerRef.current = setTimeout(() => {
+      autoCloseTimerRef.current = null;
+      closeToast();
+    }, 2000);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = null;
+      }
+    };
+  }, [listFlash, closeToast]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,7 +139,8 @@ export default function ProductsPage() {
     p.imageUrl?.trim() || "https://placehold.co/96x96/e2e8f0/64748b?text=Ü";
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -306,7 +363,7 @@ export default function ProductsPage() {
       )}
 
       {deleteId !== null && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
             <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
               <Trash2 size={22} className="text-red-500" />
@@ -336,6 +393,52 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {listFlash && (
+        <div
+          className="fixed bottom-4 right-4 z-[80] max-w-[min(calc(100vw-2rem),17.5rem)] pointer-events-none sm:bottom-6 sm:right-6"
+          aria-live="polite"
+        >
+          <div
+            role="status"
+            className={[
+              "pointer-events-auto overflow-hidden rounded-xl border border-emerald-200/90 bg-white/95 text-emerald-950 shadow-lg shadow-slate-900/8",
+              "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              toastEnter && !toastExiting ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
+            ].join(" ")}
+          >
+            <div className="flex gap-2.5 p-3 pr-2">
+              <CheckCircle
+                className="mt-0.5 shrink-0 text-emerald-500"
+                size={18}
+                strokeWidth={2}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className="text-xs font-semibold leading-tight text-emerald-900">Ürün bilgileri kaydedildi</p>
+                <p className="mt-1 text-[11px] leading-snug text-emerald-800/85">
+                  <span className="font-medium">&quot;{listFlash.productName}&quot;</span> kaydedildi.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeToast}
+                className="shrink-0 rounded-lg p-1 text-emerald-700/80 transition-colors hover:bg-emerald-100/80 hover:text-emerald-900"
+                aria-label="Kapat"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <div className="h-0.5 w-full overflow-hidden rounded-full bg-emerald-100/90">
+              <div
+                className="h-full w-full origin-left rounded-full bg-emerald-500/85"
+                style={{ animation: "toast-progress 2s linear forwards" }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

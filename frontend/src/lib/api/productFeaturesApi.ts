@@ -18,9 +18,16 @@ export async function createProductFeature(
   productId: number,
   payload: CreateProductFeaturePayload
 ): Promise<ProductFeatureDto> {
+  const body: Record<string, string | number> = {
+    name: payload.name.trim(),
+    value: payload.value.trim(),
+  };
+  if (payload.sortOrder != null && Number.isFinite(payload.sortOrder)) {
+    body.sortOrder = payload.sortOrder;
+  }
   return apiRequest<ProductFeatureDto>(`/api/products/${productId}/features`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 }
 
@@ -29,11 +36,17 @@ export async function updateProductFeature(
   productFeatureId: number,
   payload: UpdateProductFeaturePayload
 ): Promise<ProductFeatureDto> {
+  const body: Record<string, string | number> = {
+    value: payload.value.trim(),
+    sortOrder: payload.sortOrder,
+  };
+  const n = payload.name?.trim();
+  if (n) body.name = n;
   return apiRequest<ProductFeatureDto>(
     `/api/products/${productId}/features/${productFeatureId}`,
     {
       method: "PUT",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     }
   );
 }

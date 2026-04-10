@@ -3,8 +3,6 @@
 export interface CategoryDto {
   categoryId: number;
   name: string;
-  description: string | null;
-  imageUrl: string | null;
   productCount: number;
   isDeleted: boolean;
   createdBy?: string | null;
@@ -67,20 +65,17 @@ export interface PagedResult<T> {
 
 export interface CreateCategoryPayload {
   name: string;
-  description: string;
-  imageUrl?: string | null;
 }
 
 export interface UpdateCategoryPayload {
   name: string;
-  description: string;
-  imageUrl?: string | null;
 }
 
 export interface CreateProductPayload {
   categoryId: number;
   name: string;
   description: string;
+  sku: string;
   price: number;
   originalPrice?: number | null;
   isDiscount: boolean;
@@ -94,6 +89,7 @@ export interface UpdateProductPayload {
   categoryId: number;
   name: string;
   description: string;
+  sku: string;
   price: number;
   originalPrice?: number | null;
   isDiscount: boolean;
@@ -103,8 +99,9 @@ export interface UpdateProductPayload {
   barcode?: string | null;
 }
 
+/** POST /api/products/{id}/features — sunucu özellik adına göre Feature kaydı bulur veya oluşturur */
 export interface CreateProductFeaturePayload {
-  featureId: number;
+  name: string;
   value: string;
   sortOrder?: number | null;
 }
@@ -112,6 +109,8 @@ export interface CreateProductFeaturePayload {
 export interface UpdateProductFeaturePayload {
   value: string;
   sortOrder: number;
+  /** Özellik adını değiştirmek için; verilmezse sunucu mevcut adı korur */
+  name?: string | null;
 }
 
 export interface UserProfileDto {

@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { fetchCurrentUser } from "@/lib/api/authApi";
+import type { UserProfileDto } from "@/lib/api/types";
+import { getStoredAccessToken, setStoredAccessToken } from "@/lib/api/client";
 import {
   LayoutDashboard,
   Tag,
@@ -45,8 +49,53 @@ const navGroups = [
   },
 ];
 
+function displayName(p: UserProfileDto): string {
+  const parts = [p.name?.trim(), p.surname?.trim()].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : p.email;
+}
+
+
+function avatarLetter(p: UserProfileDto): string {
+  const n = p.name?.trim();
+  if (n) return n[0].toLocaleUpperCase("tr-TR");
+  const s = p.surname?.trim();
+  if (s) return s[0].toLocaleUpperCase("tr-TR");
+  const e = p.email?.trim();
+  if (e) return e[0].toUpperCase();
+  return "?";
+}
+
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [profile, setProfile] = useState<UserProfileDto | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!getStoredAccessToken()) {
+        setProfileLoading(false);
+        return;
+      }
+      try {
+        const p = await fetchCurrentUser();
+        if (!cancelled) setProfile(p);
+      } catch {
+        if (!cancelled) setProfile(null);
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleLogout = () => {
+    setStoredAccessToken(null);
+    router.push("/login");
+  };
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
@@ -178,10 +227,23 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           }`}
         >
           <div
-            className="w-9 h-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg"
-            title={collapsed ? "Admin Kullanıcı" : undefined}
+            className="w-9 h-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg select-none"
+            title={
+              collapsed
+                ? profile
+                  ? displayName(profile)
+                  : undefined
+                : undefined
+            }
+            aria-hidden
           >
-            A
+            {profileLoading ? (
+              <span className="text-slate-200/80 animate-pulse">·</span>
+            ) : profile ? (
+              avatarLetter(profile)
+            ) : (
+              "?"
+            )}
           </div>
           <div
             className={`overflow-hidden transition-all duration-300 min-w-0 ${
@@ -189,16 +251,21 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             }`}
           >
             <p className="text-white text-sm font-semibold truncate whitespace-nowrap">
-              Admin Kullanıcı
+              {profileLoading
+                ? "…"
+                : profile
+                  ? displayName(profile)
+                  : "Oturum yok"}
             </p>
             <p className="text-slate-500 text-xs truncate whitespace-nowrap">
-              admin@eticaret.com
+              {profileLoading ? "…" : profile?.email ?? "—"}
             </p>
           </div>
         </div>
 
-        <Link
-          href="/login"
+        <button
+          type="button"
+          onClick={handleLogout}
           title={collapsed ? "Çıkış Yap" : undefined}
           className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-red-400 transition-all text-sm font-medium ${
             collapsed ? "justify-center" : ""
@@ -212,7 +279,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           >
             Çıkış Yap
           </span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

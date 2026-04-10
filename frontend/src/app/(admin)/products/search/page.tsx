@@ -28,7 +28,7 @@ export default function ProductSearchPage() {
       const matchQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
+        (p.sku ?? "").toLowerCase().includes(q) ||
         (p.barcode?.includes(q) ?? false) ||
         p.description.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q);
