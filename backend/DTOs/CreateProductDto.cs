@@ -51,7 +51,8 @@ public class CreateProductDto : IValidatableObject
     [MaxLength(500, ErrorMessage = "Resim URL en fazla 500 karakter olmalıdır.")]
     public string? ImageUrl { get; set; }
 
-    [MaxLength(32, ErrorMessage = "Barkod en fazla 32 karakter olabilir.")]
+    /// <summary>GS1 GTIN (GTIN-8/12/13/14). Digits only, max 14 characters.</summary>
+    [MaxLength(14, ErrorMessage = "Barkod en fazla 14 hane olabilir (GTIN-8/12/13/14).")]
     public string? Barcode { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

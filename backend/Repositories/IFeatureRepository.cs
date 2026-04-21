@@ -17,7 +17,7 @@ namespace backend.Repositories
         /// <summary>
         /// İsme göre aktif özellik döner; yoksa oluşturur (benzersiz isim, yoksa yarışta tekrar okur).
         /// </summary>
-        Task<Feature> GetOrCreateActiveByNameAsync(string name, CancellationToken cancellationToken = default);
+        Task<Feature> GetOrCreateActiveByNameAsync(string name, string createdBy, CancellationToken cancellationToken = default);
     }
 
 }

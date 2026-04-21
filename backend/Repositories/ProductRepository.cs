@@ -90,6 +90,7 @@ public class ProductRepository : IProductRepository
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         _context.SaveChangesAsync(cancellationToken);
 
+    /// <summary>Ürün araması; oluşturan/güncelleyen kullanıcıya göre kısıtlanmaz.</summary>
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> SearchAsync(
         ProductListFilter f,
         CancellationToken cancellationToken = default)

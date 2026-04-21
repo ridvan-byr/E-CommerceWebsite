@@ -17,6 +17,7 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
+    /// <summary>Tüm aktif kategoriler; <see cref="Category.CreatedByUserId"/> ile filtrelenmez (sahiplik yok).</summary>
     public async Task<IReadOnlyList<Category>> GetAllActiveWithNonDeletedProductsAsync(
         CancellationToken cancellationToken = default)
     {
@@ -41,9 +42,8 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<Category?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-       return await _context.Categories
-       .AsNoTracking()
-       .FirstOrDefaultAsync(c => c.CategoryId == id && !c.IsDeleted);
+        return await _context.Categories
+            .FirstOrDefaultAsync(c => c.CategoryId == id && !c.IsDeleted, cancellationToken);
     }
 
     public async Task AddAsync(Category entity, CancellationToken cancellationToken = default)

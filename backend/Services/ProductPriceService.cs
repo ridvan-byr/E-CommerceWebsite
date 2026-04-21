@@ -12,13 +12,16 @@ public class ProductPriceService : IProductPriceService
 {
     private readonly IProductPriceRepository _productPriceRepository;
     private readonly IProductRepository _productRepository;
+    private readonly ICurrentUserAccessor _currentUser;
 
     public ProductPriceService(
         IProductPriceRepository productPriceRepository,
-        IProductRepository productRepository)
+        IProductRepository productRepository,
+        ICurrentUserAccessor currentUser)
     {
         _productPriceRepository = productPriceRepository;
         _productRepository = productRepository;
+        _currentUser = currentUser;
     }
 
     public async Task<IReadOnlyList<ProductPriceResponseDto>> GetHistoryAsync(
@@ -48,7 +51,8 @@ public class ProductPriceService : IProductPriceService
             OriginalPrice = dto.IsDiscount ? dto.OriginalPrice : null,
             IsDiscount = dto.IsDiscount,
             CreatedAt = System.DateTime.UtcNow,
-            CreatedBy = "System",
+            CreatedByUserId = _currentUser.UserId,
+            CreatedBy = await _currentUser.GetActorNameAsync(cancellationToken),
         };
 
         await _productPriceRepository.AddAsync(entity, cancellationToken);

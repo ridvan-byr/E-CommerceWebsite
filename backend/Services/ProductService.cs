@@ -8,13 +8,22 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly IProductFeatureRepository _productFeatureRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly ICurrentUserAccessor _currentUser;
+    private readonly IImageStorageService _imageStorage;
 
     public ProductService(
         IProductRepository productRepository,
-        IProductFeatureRepository productFeatureRepository)
+        IProductFeatureRepository productFeatureRepository,
+        IUserRepository userRepository,
+        ICurrentUserAccessor currentUser,
+        IImageStorageService imageStorage)
     {
         _productRepository = productRepository;
         _productFeatureRepository = productFeatureRepository;
+        _userRepository = userRepository;
+        _currentUser = currentUser;
+        _imageStorage = imageStorage;
     }
 
     public async Task<PagedResult<ProductResponseDto>> GetAllAsync(int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
@@ -33,6 +42,7 @@ public class ProductService : IProductService
         dto.CategoryName = await _productRepository.GetCategoryNameAsync(product.CategoryId, cancellationToken);
         var featureRows = await _productFeatureRepository.GetByProductIdAsync(id, cancellationToken);
         dto.Features = featureRows.Select(pf => new ProductFeatureResponseDto(pf)).ToList();
+        await AuditDtoEnricher.EnrichProductsAsync(new List<ProductResponseDto> { dto }, _userRepository, cancellationToken);
         return dto;
     }
 
@@ -52,6 +62,7 @@ public class ProductService : IProductService
             && await _productRepository.IsBarcodeTakenAsync(normalizedBarcode, excludeProductId: null, cancellationToken))
             return new ProductMutationResult(null, ProductMutationError.DuplicateBarcode);
 
+        var actor = await _currentUser.GetActorNameAsync(cancellationToken);
         var product = new Product
         {
             CategoryId = dto.CategoryId,
@@ -66,8 +77,10 @@ public class ProductService : IProductService
             Status = dto.Status,
             ImageUrl = dto.ImageUrl,
             IsDeleted = false,
-            CreatedBy = "System",
+            CreatedByUserId = _currentUser.UserId,
+            CreatedBy = actor,
             CreatedAt = DateTime.UtcNow,
+            UpdatedByUserId = null,
             UpdatedBy = null,
             UpdatedAt = null
         };
@@ -105,6 +118,8 @@ public class ProductService : IProductService
             && await _productRepository.IsBarcodeTakenAsync(normalizedBarcode, excludeProductId: id, cancellationToken))
             return new ProductMutationResult(null, ProductMutationError.DuplicateBarcode);
 
+        var previousImage = product.ImageUrl;
+
         product.CategoryId = dto.CategoryId;
         product.Name = dto.Name;
         product.Description = dto.Description;
@@ -117,9 +132,16 @@ public class ProductService : IProductService
         product.Status = dto.Status;
         product.ImageUrl = dto.ImageUrl;
         product.UpdatedAt = DateTime.UtcNow;
-        product.UpdatedBy = "System";
+        product.UpdatedByUserId = _currentUser.UserId;
+        product.UpdatedBy = await _currentUser.GetActorNameAsync(cancellationToken);
 
         await _productRepository.SaveChangesAsync(cancellationToken);
+
+        // Görsel değiştiyse eski dosya (local upload ise) temizlenir.
+        if (!string.Equals(previousImage, product.ImageUrl, StringComparison.Ordinal))
+        {
+            await _imageStorage.DeleteIfLocalAsync(previousImage, cancellationToken);
+        }
 
         var updated = await GetByIdAsync(id, cancellationToken);
         if (updated is null)
@@ -133,11 +155,18 @@ public class ProductService : IProductService
         if (product is null)
             return true;
 
+        var imageToRemove = product.ImageUrl;
+
         product.IsDeleted = true;
         product.UpdatedAt = DateTime.UtcNow;
-        product.UpdatedBy = "System";
+        product.UpdatedByUserId = _currentUser.UserId;
+        product.UpdatedBy = await _currentUser.GetActorNameAsync(cancellationToken);
 
         await _productRepository.SaveChangesAsync(cancellationToken);
+
+        // Ürün silindiğinde local olarak yüklenmiş görsel de disk'ten kaldırılır.
+        await _imageStorage.DeleteIfLocalAsync(imageToRemove, cancellationToken);
+
         return true;
     }
 
@@ -150,6 +179,7 @@ public class ProductService : IProductService
 
         var list = items.Select(MapToResponseDto).ToList();
         await EnrichCategoryNamesAsync(list, cancellationToken);
+        await AuditDtoEnricher.EnrichProductsAsync(list, _userRepository, cancellationToken);
 
         return new PagedResult<ProductResponseDto>
         {
@@ -191,8 +221,10 @@ public class ProductService : IProductService
         Status = product.Status,
         ImageUrl = product.ImageUrl,
         IsDeleted = product.IsDeleted,
+        CreatedByUserId = product.CreatedByUserId,
         CreatedBy = product.CreatedBy,
         CreatedAt = product.CreatedAt,
+        UpdatedByUserId = product.UpdatedByUserId,
         UpdatedBy = product.UpdatedBy,
         UpdatedAt = product.UpdatedAt,
     };

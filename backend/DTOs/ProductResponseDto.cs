@@ -19,8 +19,10 @@ public class ProductResponseDto
     public string Status { get; set; } = "active";
     public string? ImageUrl { get; set; }
     public bool IsDeleted { get; set; }
+    public int? CreatedByUserId { get; set; }
     public string? CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    public int? UpdatedByUserId { get; set; }
     public string? UpdatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
 

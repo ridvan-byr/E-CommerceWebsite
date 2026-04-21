@@ -9,15 +9,18 @@ public class ProductFeatureService : IProductFeatureService
     private readonly IProductFeatureRepository _productFeatureRepository;
     private readonly IProductRepository _productRepository;
     private readonly IFeatureRepository _featureRepository;
+    private readonly ICurrentUserAccessor _currentUser;
 
     public ProductFeatureService(
         IProductFeatureRepository productFeatureRepository,
         IProductRepository productRepository,
-        IFeatureRepository featureRepository)
+        IFeatureRepository featureRepository,
+        ICurrentUserAccessor currentUser)
     {
         _productFeatureRepository = productFeatureRepository;
         _productRepository = productRepository;
         _featureRepository = featureRepository;
+        _currentUser = currentUser;
     }
 
     public async Task<IReadOnlyList<ProductFeatureResponseDto>?> GetByProductIdAsync(int productId, CancellationToken cancellationToken = default)
@@ -45,7 +48,11 @@ public class ProductFeatureService : IProductFeatureService
         if (product is null)
             return null;
 
-        var feature = await _featureRepository.GetOrCreateActiveByNameAsync(dto.Name, cancellationToken);
+        var actor = await _currentUser.GetActorNameAsync(cancellationToken);
+        var feature = await _featureRepository.GetOrCreateActiveByNameAsync(
+            dto.Name,
+            actor,
+            cancellationToken);
 
         if (await _productFeatureRepository.ExistsAsync(productId, feature.FeatureId, null, cancellationToken))
             return null;
@@ -58,7 +65,8 @@ public class ProductFeatureService : IProductFeatureService
             FeatureId = feature.FeatureId,
             Value = dto.Value.Trim(),
             SortOrder = sortOrder,
-            CreatedBy = "System",
+            CreatedByUserId = _currentUser.UserId,
+            CreatedBy = actor,
             CreatedAt = DateTime.UtcNow,
         };
 
@@ -86,7 +94,11 @@ public class ProductFeatureService : IProductFeatureService
             var currentName = current?.Name.Trim() ?? string.Empty;
             if (!string.Equals(want, currentName, StringComparison.OrdinalIgnoreCase))
             {
-                var feature = await _featureRepository.GetOrCreateActiveByNameAsync(want, cancellationToken);
+                var actor = await _currentUser.GetActorNameAsync(cancellationToken);
+                var feature = await _featureRepository.GetOrCreateActiveByNameAsync(
+                    want,
+                    actor,
+                    cancellationToken);
                 if (feature.FeatureId != pf.FeatureId
                     && await _productFeatureRepository.ExistsAsync(productId, feature.FeatureId, productFeatureId, cancellationToken))
                     return null;
@@ -98,7 +110,8 @@ public class ProductFeatureService : IProductFeatureService
         pf.Value = dto.Value.Trim();
         pf.SortOrder = dto.SortOrder;
         pf.UpdatedAt = DateTime.UtcNow;
-        pf.UpdatedBy = "System";
+        pf.UpdatedByUserId = _currentUser.UserId;
+        pf.UpdatedBy = await _currentUser.GetActorNameAsync(cancellationToken);
 
         await _productFeatureRepository.SaveChangesAsync(cancellationToken);
 

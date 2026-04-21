@@ -7,6 +7,7 @@ public class ProductPrice
     public decimal Price { get; set; }
     public decimal? OriginalPrice { get; set; }
     public bool IsDiscount { get; set; }
+    public int? CreatedByUserId { get; set; }
     public string? CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
 

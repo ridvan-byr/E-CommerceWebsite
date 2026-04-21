@@ -49,14 +49,10 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.GeneratePasswordResetTokenAsync(dto.Email, cancellationToken);
-
-        // Always return OK to prevent email enumeration
-        // In production, send the token via email instead of returning it
-        if (token is not null)
-            return Ok(new { message = "Şifre sıfırlama bağlantısı gönderildi.", token });
-
-        return Ok(new { message = "Şifre sıfırlama bağlantısı gönderildi." });
+        // Kullanıcı enumeration'ını önlemek için her zaman aynı yanıtı döndürüyoruz.
+        // E-posta gönderimi servis içinde yapılır; kullanıcı yoksa sessizce çıkar.
+        await _authService.SendPasswordResetEmailAsync(dto.Email, cancellationToken);
+        return Ok(new { message = "Eğer bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi." });
     }
 
     [HttpPost("reset-password")]

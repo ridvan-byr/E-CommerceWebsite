@@ -23,12 +23,19 @@ public class DataContext : DbContext{
         e.Property(p => p.Sku).IsRequired().HasMaxLength(50);
         // Unique among active rows only — soft-deleted products free SKU/barcode for reuse.
         e.HasIndex(p => p.Sku).IsUnique().HasFilter("[IsDeleted] = 0");
-        e.Property(p => p.Barcode).HasMaxLength(32);
+        e.Property(p => p.Barcode).HasMaxLength(14);
         e.HasIndex(p => p.Barcode)
             .IsUnique()
             .HasFilter("[Barcode] IS NOT NULL AND [IsDeleted] = 0");
+        e.Property(p => p.Price).HasPrecision(18, 2);
+        e.Property(p => p.OriginalPrice).HasPrecision(18, 2);
         });
-        modelBuilder.Entity<ProductPrice>().HasOne(p => p.Product).WithMany(c => c.ProductPrices).HasForeignKey(p => p.ProductId);
+        modelBuilder.Entity<ProductPrice>(e =>
+        {
+            e.HasOne(p => p.Product).WithMany(c => c.ProductPrices).HasForeignKey(p => p.ProductId);
+            e.Property(p => p.Price).HasPrecision(18, 2);
+            e.Property(p => p.OriginalPrice).HasPrecision(18, 2);
+        });
 
         modelBuilder.Entity<ProductFeature>(e =>
         {

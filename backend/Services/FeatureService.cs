@@ -7,19 +7,23 @@ namespace backend.Services;
 public class FeatureService : IFeatureService
 {
     private readonly IFeatureRepository _featureRepository;
+    private readonly ICurrentUserAccessor _currentUser;
 
-    public FeatureService(IFeatureRepository featureRepository)
+    public FeatureService(IFeatureRepository featureRepository, ICurrentUserAccessor currentUser)
     {
         _featureRepository = featureRepository;
+        _currentUser = currentUser;
     }
 
     public async Task<FeatureResponseDto?> CreateAsync(CreateFeatureDto dto, CancellationToken cancellationToken = default)
     {
+        var actor = await _currentUser.GetActorNameAsync(cancellationToken);
         var feature = new Feature
         {
             Name = dto.Name,
             IsDeleted = false,
-            CreatedBy = "System",
+            CreatedByUserId = _currentUser.UserId,
+            CreatedBy = actor,
             CreatedAt = DateTime.UtcNow,
         };
 
@@ -49,7 +53,8 @@ public class FeatureService : IFeatureService
 
         feature.Name = dto.Name;
         feature.UpdatedAt = DateTime.UtcNow;
-        feature.UpdatedBy = "System";
+        feature.UpdatedByUserId = _currentUser.UserId;
+        feature.UpdatedBy = await _currentUser.GetActorNameAsync(cancellationToken);
 
         await _featureRepository.SaveChangesAsync(cancellationToken);
 
@@ -64,7 +69,8 @@ public class FeatureService : IFeatureService
 
         feature.IsDeleted = true;
         feature.UpdatedAt = DateTime.UtcNow;
-        feature.UpdatedBy = "System";
+        feature.UpdatedByUserId = _currentUser.UserId;
+        feature.UpdatedBy = await _currentUser.GetActorNameAsync(cancellationToken);
 
         await _featureRepository.SaveChangesAsync(cancellationToken);
         return true;

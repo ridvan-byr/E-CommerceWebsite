@@ -43,7 +43,10 @@ public class FeatureRepository : IFeatureRepository
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);
 
-    public async Task<Feature> GetOrCreateActiveByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<Feature> GetOrCreateActiveByNameAsync(
+        string name,
+        string createdBy,
+        CancellationToken cancellationToken = default)
     {
         var trimmed = (name ?? string.Empty).Trim();
         if (trimmed.Length == 0)
@@ -62,7 +65,7 @@ public class FeatureRepository : IFeatureRepository
         {
             Name = trimmed,
             IsDeleted = false,
-            CreatedBy = "System",
+            CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
         };
 

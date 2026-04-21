@@ -15,8 +15,12 @@ public class Product
     public string Status { get; set; } = "active";
     public string? ImageUrl { get; set; }
     public bool IsDeleted { get; set; } = false;
+    /// <summary>Denetim: oturumdaki kullanıcı kimliği. Kayıtların kim tarafından görüleceğini belirlemez.</summary>
+    public int? CreatedByUserId { get; set; }
     public string? CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    /// <summary>Denetim: son güncelleyen kullanıcı kimliği.</summary>
+    public int? UpdatedByUserId { get; set; }
     public string? UpdatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
 

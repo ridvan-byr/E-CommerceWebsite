@@ -12,5 +12,11 @@ public interface IAuthService
 
     Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Sıfırlama token'ı üretir ve kullanıcıya e-posta ile bağlantı gönderir.
+    /// Kullanıcı bulunmazsa ya da pasifse hiçbir işlem yapmaz (kullanıcı sayımını açığa çıkarmamak için).
+    /// </summary>
+    Task SendPasswordResetEmailAsync(string email, CancellationToken cancellationToken = default);
+
     Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default);
 }
