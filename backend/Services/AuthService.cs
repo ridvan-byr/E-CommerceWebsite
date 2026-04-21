@@ -36,35 +36,61 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto dto, CancellationToken cancellationToken = default)
+    public async Task<RegisterResultDto?> RegisterAsync(FirebaseRegisterRequestDto dto, CancellationToken cancellationToken = default)
     {
-        var email = NormalizeEmail(dto.Email);
-        if (await _userRepository.EmailExistsAsync(email, cancellationToken))
+        // Firebase token'ını doğrula, e-postayı oradan al.
+        FirebaseToken decoded;
+        try
+        {
+            decoded = await _firebaseAuth.VerifyIdTokenAsync(dto.IdToken, cancellationToken);
+        }
+        catch (FirebaseAuthException ex)
+        {
+            _logger.LogWarning(ex, "Kayıt: Firebase ID Token doğrulanamadı.");
             return null;
+        }
 
-        // İlk kayıt olan kullanıcı otomatik olarak Admin olur; sonrakiler Customer.
+        var claims = decoded.Claims;
+        var email = claims.TryGetValue("email", out var e) && e is string es
+            ? NormalizeEmail(es) : null;
+
+        if (email is null)
+        {
+            _logger.LogWarning("Kayıt: Firebase token e-posta içermiyor (uid={Uid})", decoded.Uid);
+            return null;
+        }
+
+        if (await _userRepository.EmailExistsAsync(email, cancellationToken))
+            return null; // null → 409 Conflict
+
         var role = (await _userRepository.AnyAsync(cancellationToken)) ? "Customer" : "Admin";
+        var verificationToken = Guid.NewGuid().ToString("N");
 
         var user = new User
         {
             Name = dto.Name.Trim(),
             Surname = dto.Surname.Trim(),
             Email = email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            FirebaseUid = decoded.Uid,
+            PasswordHash = "FIREBASE",
             Role = role,
             IsActive = true,
+            EmailVerified = false,
+            EmailVerificationToken = verificationToken,
+            EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24),
+            // Kayıt formunda KVKK checkbox'ı onaylanarak gelindiği için burada kabul edilmiş sayılır.
+            KvkkAcceptedAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
         };
 
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        var created = await _userRepository.GetByEmailAsync(email, cancellationToken);
-        if (created is null)
-            return null;
+        _logger.LogInformation("Yeni kullanıcı kaydedildi (doğrulama bekleniyor): {Email} (rol: {Role})", email, role);
 
-        _logger.LogInformation("Yeni kullanıcı kaydedildi: {Email} (rol: {Role})", created.Email, created.Role);
-        return BuildAuthResponse(created);
+        await SendVerificationEmailInternalAsync(user, cancellationToken);
+
+        return new RegisterResultDto { Email = email };
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto dto, CancellationToken cancellationToken = default)
@@ -86,10 +112,10 @@ public class AuthService : IAuthService
         return BuildAuthResponse(user);
     }
 
-    public async Task<AuthResponseDto?> LoginWithFirebaseAsync(string idToken, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> LoginWithFirebaseAsync(string idToken, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(idToken))
-            return null;
+            return new AuthResult(null);
 
         FirebaseToken decoded;
         try
@@ -99,7 +125,7 @@ public class AuthService : IAuthService
         catch (FirebaseAuthException ex)
         {
             _logger.LogWarning(ex, "Firebase ID Token doğrulanamadı.");
-            return null;
+            return new AuthResult(null);
         }
 
         var uid = decoded.Uid;
@@ -134,7 +160,7 @@ public class AuthService : IAuthService
             if (email is null)
             {
                 _logger.LogWarning("Firebase token e-posta içermiyor, kullanıcı oluşturulamadı: {Uid}", uid);
-                return null;
+                return new AuthResult(null);
             }
 
             var (firstName, lastName) = SplitDisplayName(displayName, email);
@@ -147,11 +173,11 @@ public class AuthService : IAuthService
                 Email = email,
                 FirebaseUid = uid,
                 PhotoUrl = photoUrl,
-                // Firebase üzerinden yönetilen kullanıcılar için şifre hash'i kullanılmaz;
-                // yine de null olmaması için boş ama yerel login'i engelleyen bir değer atıyoruz.
                 PasswordHash = "FIREBASE",
                 Role = role,
                 IsActive = true,
+                // Google / diğer OAuth provider'lar e-postayı doğrulanmış olarak sunar.
+                EmailVerified = true,
                 CreatedAt = DateTime.UtcNow,
             };
 
@@ -170,10 +196,17 @@ public class AuthService : IAuthService
         if (!user.IsActive)
         {
             _logger.LogWarning("Firebase girişi: pasif hesap {Email}", user.Email);
-            return null;
+            return new AuthResult(null);
         }
 
-        return BuildAuthResponse(user);
+        // E-posta doğrulanmamışsa giriş engelle.
+        if (!user.EmailVerified)
+        {
+            _logger.LogWarning("Firebase girişi: e-posta doğrulanmamış {Email}", user.Email);
+            return new AuthResult(null, "EMAIL_NOT_VERIFIED", user.Email);
+        }
+
+        return new AuthResult(BuildAuthResponse(user));
     }
 
     private static (string First, string Last) SplitDisplayName(string? displayName, string fallbackEmail)
@@ -215,6 +248,7 @@ public class AuthService : IAuthService
             Email = user.Email,
             Role = user.Role,
             PhotoUrl = user.PhotoUrl,
+            KvkkAccepted = user.KvkkAcceptedAt.HasValue,
         };
 
     private string CreateJwtToken(User user, DateTime expiresUtc)
@@ -376,6 +410,18 @@ public class AuthService : IAuthService
         return (subject, html, text);
     }
 
+    public async Task<ResetTokenStatus> ValidateResetTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByResetTokenAsync(token, cancellationToken);
+        if (user is null)
+            return ResetTokenStatus.NotFound;
+
+        if (user.PasswordResetTokenExpiry is null || user.PasswordResetTokenExpiry < DateTime.UtcNow)
+            return ResetTokenStatus.Expired;
+
+        return ResetTokenStatus.Valid;
+    }
+
     public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByResetTokenAsync(token, cancellationToken);
@@ -391,6 +437,156 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(cancellationToken);
 
+        return true;
+    }
+
+    public async Task<VerifyEmailStatus> VerifyEmailAsync(string token, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByVerificationTokenAsync(token, cancellationToken);
+        if (user is null)
+            return VerifyEmailStatus.NotFound;
+
+        if (user.EmailVerified)
+        {
+            user.EmailVerificationToken = null;
+            user.EmailVerificationTokenExpiry = null;
+            await _userRepository.SaveChangesAsync(cancellationToken);
+            return VerifyEmailStatus.AlreadyVerified;
+        }
+
+        if (user.EmailVerificationTokenExpiry is null || user.EmailVerificationTokenExpiry < DateTime.UtcNow)
+            return VerifyEmailStatus.Expired;
+
+        user.EmailVerified = true;
+        user.EmailVerificationToken = null;
+        user.EmailVerificationTokenExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("E-posta doğrulandı: {Email}", user.Email);
+        return VerifyEmailStatus.Success;
+    }
+
+    public async Task ResendVerificationEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalized = NormalizeEmail(email);
+        var user = await _userRepository.GetByEmailTrackingAsync(normalized, cancellationToken);
+
+        if (user is null || !user.IsActive || user.EmailVerified)
+        {
+            _logger.LogInformation("Yeniden doğrulama: kullanıcı bulunamadı/pasif/zaten doğrulanmış ({Email})", normalized);
+            return;
+        }
+
+        var token = Guid.NewGuid().ToString("N");
+        user.EmailVerificationToken = token;
+        user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        await SendVerificationEmailInternalAsync(user, cancellationToken);
+    }
+
+    private async Task SendVerificationEmailInternalAsync(User user, CancellationToken cancellationToken)
+    {
+        var baseUrl = (_appUrl.FrontendBaseUrl ?? string.Empty).TrimEnd('/');
+        var verifyUrl = $"{baseUrl}/verify-email?token={Uri.EscapeDataString(user.EmailVerificationToken!)}";
+        var fullName = $"{user.Name} {user.Surname}".Trim();
+        if (fullName.Length == 0) fullName = "Kullanıcı";
+
+        var (subject, html, text) = BuildVerificationEmailMessage(fullName, verifyUrl);
+
+        try
+        {
+            await _emailSender.SendAsync(user.Email, fullName, subject, html, text, cancellationToken);
+            _logger.LogInformation("Doğrulama e-postası gönderildi: {Email}", user.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Doğrulama e-postası gönderilemedi: {Email}", user.Email);
+            throw;
+        }
+    }
+
+    private static (string Subject, string Html, string Text) BuildVerificationEmailMessage(string displayName, string verifyUrl)
+    {
+        var subject = "E-posta adresinizi doğrulayın";
+        var safeName = System.Net.WebUtility.HtmlEncode(displayName);
+        var safeUrl = System.Net.WebUtility.HtmlEncode(verifyUrl);
+
+        var html = $$"""
+        <!DOCTYPE html>
+        <html lang="tr">
+          <body style="margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;color:#0f172a;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:32px 0;">
+              <tr>
+                <td align="center">
+                  <table role="presentation" width="560" cellspacing="0" cellpadding="0"
+                    style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,0.08);">
+                    <tr>
+                      <td style="padding:32px 40px 24px 40px;border-bottom:1px solid #e2e8f0;">
+                        <div style="font-size:18px;font-weight:700;color:#4f46e5;">E-Ticaret Yönetim Paneli</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:36px 40px 28px 40px;">
+                        <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+                          <span style="font-size:28px;">✉️</span>
+                        </div>
+                        <p style="margin:0 0 8px 0;font-size:22px;font-weight:700;color:#0f172a;">Merhaba, {{safeName}}!</p>
+                        <p style="margin:0 0 24px 0;font-size:15px;color:#64748b;line-height:1.6;">
+                          Kaydınızı tamamlamak için e-posta adresinizi doğrulamanız gerekiyor.
+                          Aşağıdaki düğmeye tıklayarak hesabınızı aktif hale getirin.
+                        </p>
+                        <a href="{{safeUrl}}"
+                          style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px;">
+                          E-Posta Adresimi Doğrula
+                        </a>
+                        <p style="margin:24px 0 0 0;font-size:13px;color:#94a3b8;line-height:1.6;">
+                          Bu bağlantı <strong>24 saat</strong> geçerlidir. Eğer bu hesabı siz oluşturmadıysanız bu e-postayı görmezden gelebilirsiniz.
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:20px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                        <p style="margin:0;font-size:12px;color:#94a3b8;">
+                          © {{DateTime.UtcNow.Year}} E-Ticaret Yönetim Paneli. Bağlantı çalışmıyorsa URL'yi tarayıcınıza kopyalayın:<br/>
+                          <span style="color:#6366f1;word-break:break-all;">{{safeUrl}}</span>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+        """;
+
+        var text = $"""
+        Merhaba {displayName},
+
+        Hesabınızı aktif hale getirmek için aşağıdaki bağlantıya tıklayın (24 saat geçerli):
+
+        {verifyUrl}
+
+        Bu hesabı siz oluşturmadıysanız bu e-postayı görmezden gelebilirsiniz.
+
+        E-Ticaret Yönetim Paneli
+        """;
+
+        return (subject, html, text);
+    }
+
+    public async Task<bool> AcceptKvkkAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdTrackingAsync(userId, cancellationToken);
+        if (user is null) return false;
+
+        user.KvkkAcceptedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("KVKK onayı kaydedildi: {Email} ({UserId})", user.Email, userId);
         return true;
     }
 

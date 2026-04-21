@@ -16,6 +16,15 @@ public class User
     public DateTime? PasswordResetTokenExpiry { get; set; }
 
     /// <summary>
+    /// E-posta adresi onaylandı mı? Firebase üzerinden kayıt olan kullanıcılar
+    /// için varsayılan true; manuel kayıt için e-posta doğrulanana kadar false.
+    /// </summary>
+    public bool EmailVerified { get; set; } = false;
+
+    public string? EmailVerificationToken { get; set; }
+    public DateTime? EmailVerificationTokenExpiry { get; set; }
+
+    /// <summary>
     /// Firebase Authentication UID — kullanıcı Firebase üzerinden giriş yaptığında
     /// yerel User kaydıyla eşleştirme için kullanılır. Eski/sadece e-posta+şifre ile
     /// kayıtlı kullanıcılar için null olabilir.
@@ -26,4 +35,10 @@ public class User
     /// Kullanıcı profil fotoğrafı URL'i (Firebase / Google). Yoksa null.
     /// </summary>
     public string? PhotoUrl { get; set; }
+
+    /// <summary>
+    /// KVKK Aydınlatma Metni'ni kullanıcının kabul ettiği tarih.
+    /// Null ise henüz kabul etmemiş; giriş sonrası onay sayfasına yönlendirilir.
+    /// </summary>
+    public DateTime? KvkkAcceptedAt { get; set; }
 }

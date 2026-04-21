@@ -10,4 +10,7 @@ public class UserProfileDto
 
     /// <summary>Firebase/Google profil fotoğrafı. Yoksa null.</summary>
     public string? PhotoUrl { get; set; }
+
+    /// <summary>KVKK onayı verildi mi?</summary>
+    public bool KvkkAccepted { get; set; }
 }

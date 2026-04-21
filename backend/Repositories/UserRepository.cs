@@ -22,6 +22,12 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
     }
 
+    public async Task<User?> GetByIdTrackingAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+    }
+
     public async Task<IReadOnlyDictionary<int, User>> GetByIdsAsync(
         IReadOnlyList<int> userIds,
         CancellationToken cancellationToken = default)
@@ -106,6 +112,12 @@ public class UserRepository : IUserRepository
     {
         return await _context.Users
             .FirstOrDefaultAsync(u => u.PasswordResetToken == token, cancellationToken);
+    }
+
+    public async Task<User?> GetByVerificationTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.EmailVerificationToken == token, cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>

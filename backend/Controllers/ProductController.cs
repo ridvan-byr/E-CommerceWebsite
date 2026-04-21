@@ -13,10 +13,37 @@ public class ProductController : ControllerBase
 {
 
     private readonly IProductService _productService;
+    private readonly IImageStorageService _imageStorage;
 
-    public ProductController(IProductService productService)
+    public ProductController(IProductService productService, IImageStorageService imageStorage)
     {
         _productService = productService;
+        _imageStorage = imageStorage;
+    }
+
+    /// <summary>
+    /// Ürün görseli yükler. multipart/form-data — alan adı: "file".
+    /// Maksimum boyut: 5 MB. Desteklenen formatlar: JPG, PNG, WEBP, GIF.
+    /// Dönen URL doğrudan imageUrl alanında kullanılabilir.
+    /// </summary>
+    [HttpPost("upload-image")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<IActionResult> UploadImage(
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Dosya seçilmedi." });
+
+        try
+        {
+            var url = await _imageStorage.SaveProductImageAsync(file, cancellationToken);
+            return Ok(new { url });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet]

@@ -6,6 +6,8 @@ public interface IUserRepository
 {
     Task<User?> GetByIdAsync(int userId, CancellationToken cancellationToken = default);
 
+    Task<User?> GetByIdTrackingAsync(int userId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyDictionary<int, User>> GetByIdsAsync(
         IReadOnlyList<int> userIds,
         CancellationToken cancellationToken = default);
@@ -36,6 +38,8 @@ public interface IUserRepository
     Task<User?> GetByEmailTrackingAsync(string normalizedEmail, CancellationToken cancellationToken = default);
 
     Task<User?> GetByResetTokenAsync(string token, CancellationToken cancellationToken = default);
+
+    Task<User?> GetByVerificationTokenAsync(string token, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
