@@ -49,7 +49,7 @@ export default function UserAvatar({
         referrerPolicy="no-referrer"
         onError={() => setImgBroken(true)}
         style={dim}
-        className={`rounded-xl object-cover flex-shrink-0 ring-1 ring-slate-200 ${className}`}
+        className={`rounded-xl object-cover flex-shrink-0 ${className}`}
       />
     );
   }

@@ -7,12 +7,13 @@ import {
   ArrowLeft,
   Package,
   DollarSign,
-  Image,
+  ImageIcon,
   CheckCircle,
   Plus,
   X,
   Layers,
 } from "lucide-react";
+import ImageUpload from "@/components/ImageUpload";
 import { fetchCategories } from "@/lib/api/categoriesApi";
 import { createProduct } from "@/lib/api/productsApi";
 import { createProductFeature } from "@/lib/api/productFeaturesApi";
@@ -450,34 +451,22 @@ export default function ProductCreatePage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
-              <Image size={17} className="text-purple-600" />
+              <ImageIcon size={17} className="text-purple-600" />
             </div>
             <div>
               <h2 className="text-slate-900 font-semibold">Görsel & Durum</h2>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-5">
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Görsel URL</label>
-              <input
-                type="url"
+              <label className="block text-slate-700 text-sm font-medium mb-3">Ürün Görseli</label>
+              <ImageUpload
                 value={form.image}
-                onChange={(e) => set("image", e.target.value)}
-                placeholder="https://..."
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm"
+                onChange={(url) => set("image", url)}
+                disabled={loading}
               />
             </div>
-            {form.image ? (
-              <img
-                src={form.image}
-                alt=""
-                className="w-48 h-48 object-cover rounded-xl border border-slate-200"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : null}
             <div>
               <label className="block text-slate-700 text-sm font-medium mb-2">Yayın durumu</label>
               <div className="flex gap-3">

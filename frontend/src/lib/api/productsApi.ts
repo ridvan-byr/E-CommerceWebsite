@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, getApiBaseUrl, getStoredAccessToken } from "./client";
 import type {
   CreateProductPayload,
   PagedResult,
@@ -61,4 +61,55 @@ export async function updateProduct(
 
 export async function deleteProduct(id: number): Promise<void> {
   await apiRequest(`/api/products/${id}`, { method: "DELETE", parseJson: false });
+}
+
+/**
+ * Ürün görselini sunucuya yükler. `multipart/form-data` ile gönderilir.
+ * Sunucu yüklenen dosyayı `wwwroot/uploads/products/` altına kaydeder
+ * ve göreli URL'i döner (ör. `/uploads/products/abc123.jpg`).
+ */
+export async function uploadProductImage(
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  const url = `${getApiBaseUrl()}/api/products/upload-image`;
+  const token = getStoredAccessToken();
+
+  return new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText) as { url: string };
+          resolve(data.url);
+        } catch {
+          reject(new Error("Sunucu yanıtı geçersiz."));
+        }
+      } else {
+        let msg = `HTTP ${xhr.status}`;
+        try {
+          const err = JSON.parse(xhr.responseText) as { message?: string };
+          if (err.message) msg = err.message;
+        } catch {
+          /* ignore */
+        }
+        reject(new Error(msg));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Ağ hatası oluştu."));
+    xhr.ontimeout = () => reject(new Error("Yükleme zaman aşımına uğradı."));
+    xhr.timeout = 30_000;
+
+    const fd = new FormData();
+    fd.append("file", file);
+    xhr.send(fd);
+  });
 }

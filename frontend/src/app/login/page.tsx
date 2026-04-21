@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,7 +14,7 @@ import {
   Lock,
 } from "lucide-react";
 import { FirebaseError } from "firebase/app";
-import { loginWithFirebase, loginWithGoogle } from "@/lib/api/authApi";
+import { loginWithFirebase, loginWithGoogle, resendVerificationEmail } from "@/lib/api/authApi";
 import { ApiRequestError, setStoredAccessToken } from "@/lib/api/client";
 
 export default function LoginPage() {
@@ -22,8 +22,46 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Sekme geri odaklandığında veya bfcache'den restore edildiğinde
+  // yarıda kalmış loading state'ini sıfırla.
+  useEffect(() => {
+    const resetLoading = () => {
+      setEmailLoading(false);
+      setGoogleLoading(false);
+    };
+
+    // Tarayıcı sekme değiştirme / minimize
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") resetLoading();
+    };
+    // bfcache'den geri yükleme (back/forward)
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) resetLoading();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, []);
 
   const translateFirebaseError = (code: string): string => {
     switch (code) {
@@ -53,6 +91,21 @@ export default function LoginPage() {
       return;
     }
     if (err instanceof ApiRequestError) {
+      // E-posta doğrulanmamış — özel banner göster
+      const body = err.body as Record<string, unknown> | null;
+      if (
+        err.status === 403 &&
+        typeof body === "object" &&
+        body !== null &&
+        (body as Record<string, unknown>).errorCode === "EMAIL_NOT_VERIFIED"
+      ) {
+        const unverEmail =
+          typeof (body as Record<string, unknown>).email === "string"
+            ? (body as Record<string, string>).email
+            : email.trim();
+        setUnverifiedEmail(unverEmail);
+        return;
+      }
       const msg =
         typeof err.body === "object" &&
         err.body !== null &&
@@ -69,33 +122,57 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setUnverifiedEmail(null);
+    setResendSent(false);
     if (!email || !password) {
       setError("Lütfen tüm alanları doldurun.");
       return;
     }
-    setLoading(true);
+    setEmailLoading(true);
     try {
       const result = await loginWithFirebase(email.trim(), password);
       setStoredAccessToken(result.accessToken);
       router.push("/dashboard");
     } catch (err) {
-      handleAuthError(err);
+      if (mountedRef.current) handleAuthError(err);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setEmailLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     setError("");
-    setLoading(true);
+    setUnverifiedEmail(null);
+    setResendSent(false);
+    setGoogleLoading(true);
+
+    // Google popup COOP uyarısı nedeniyle takılabilir; 90 sn sonra otomatik reset.
+    const safetyTimer = setTimeout(() => {
+      if (mountedRef.current) setGoogleLoading(false);
+    }, 90_000);
+
     try {
       const result = await loginWithGoogle();
       setStoredAccessToken(result.accessToken);
       router.push("/dashboard");
     } catch (err) {
-      handleAuthError(err);
+      if (mountedRef.current) handleAuthError(err);
     } finally {
-      setLoading(false);
+      clearTimeout(safetyTimer);
+      if (mountedRef.current) setGoogleLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail || resendLoading) return;
+    setResendLoading(true);
+    try {
+      await resendVerificationEmail(unverifiedEmail);
+      setResendSent(true);
+    } catch {
+      // Güvenli yanıt
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -225,6 +302,38 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* E-posta doğrulanmamış banner */}
+            {unverifiedEmail && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <div>
+                    <p className="text-amber-800 text-sm font-medium leading-snug">
+                      E-posta adresiniz henüz doğrulanmamış.
+                    </p>
+                    <p className="text-amber-700 text-xs mt-0.5">
+                      <span className="font-medium">{unverifiedEmail}</span> adresine gönderilen
+                      bağlantıya tıklayın.
+                    </p>
+                  </div>
+                </div>
+                {resendSent ? (
+                  <p className="text-emerald-700 text-xs font-medium pl-4">
+                    ✓ Doğrulama bağlantısı yeniden gönderildi.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendLoading}
+                    className="ml-4 text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline underline-offset-2 flex items-center gap-1 transition-colors disabled:opacity-50"
+                  >
+                    {resendLoading ? "Gönderiliyor…" : "Doğrulama e-postasını yeniden gönder"}
+                  </button>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="block text-slate-700 text-sm font-medium mb-1.5">
                 E-posta adresi
@@ -235,7 +344,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ornek@email.com"
                 autoComplete="email"
-                disabled={loading}
+                disabled={emailLoading}
                 className="w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
               />
             </div>
@@ -257,7 +366,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  disabled={loading}
+                  disabled={emailLoading}
                   className="w-full h-11 px-3.5 pr-11 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
                 />
                 <button
@@ -273,10 +382,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={emailLoading}
               className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
-              {loading ? (
+              {emailLoading ? (
                 <div className="w-4.5 h-4.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
@@ -299,16 +408,20 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={googleLoading || emailLoading}
             className="w-full h-11 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-60 text-slate-700 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-3 border border-slate-200 shadow-sm"
           >
-            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.8 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.3-3.5z" />
-              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.8 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z" />
-              <path fill="#4CAF50" d="M24 43.5c5.1 0 9.7-1.9 13.2-5.1l-6.1-5c-2 1.4-4.5 2.1-7.1 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z" />
-              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.4-2.4 4.4-4.4 5.9l6.1 5c-.4.4 6.5-4.7 6.5-14.9 0-1.2-.1-2.3-.3-3.5z" />
-            </svg>
-            Google ile giriş yap
+            {googleLoading ? (
+              <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.8 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.3-3.5z" />
+                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.8 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z" />
+                <path fill="#4CAF50" d="M24 43.5c5.1 0 9.7-1.9 13.2-5.1l-6.1-5c-2 1.4-4.5 2.1-7.1 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z" />
+                <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.4-2.4 4.4-4.4 5.9l6.1 5c-.4.4 6.5-4.7 6.5-14.9 0-1.2-.1-2.3-.3-3.5z" />
+              </svg>
+            )}
+            {googleLoading ? "Giriş yapılıyor…" : "Google ile giriş yap"}
           </button>
 
           <p className="text-center text-sm text-slate-500 mt-8">

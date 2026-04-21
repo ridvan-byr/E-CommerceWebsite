@@ -1,8 +1,10 @@
 import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updateProfile,
 } from "firebase/auth";
 import { auth as firebaseAuth } from "@/lib/firebase";
 import { apiRequest } from "./client";
@@ -12,6 +14,7 @@ import type { AuthResponseDto, UserProfileDto } from "./types";
 function parseUserProfile(data: unknown): UserProfileDto {
   const u = data as Record<string, unknown>;
   const photoRaw = u.photoUrl ?? u.PhotoUrl;
+  const kvkkRaw = u.kvkkAccepted ?? u.KvkkAccepted;
   return {
     userId: Number(u.userId ?? u.UserId ?? 0),
     name: String(u.name ?? u.Name ?? ""),
@@ -19,6 +22,7 @@ function parseUserProfile(data: unknown): UserProfileDto {
     email: String(u.email ?? u.Email ?? ""),
     role: String(u.role ?? u.Role ?? ""),
     photoUrl: typeof photoRaw === "string" && photoRaw.length > 0 ? photoRaw : null,
+    kvkkAccepted: kvkkRaw === true || kvkkRaw === "true",
   };
 }
 
@@ -50,17 +54,33 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return parseAuthResponse(raw);
 }
 
+/**
+ * Firebase ile yeni kullanıcı oluşturur (email+password), ardından
+ * backend'e kaydeder ve doğrulama e-postası gönderir.
+ * Giriş yapmaz; kullanıcı önce e-postasını doğrulamalıdır.
+ */
 export async function register(
   name: string,
   surname: string,
   email: string,
   password: string,
-): Promise<AuthResponseDto> {
-  const raw = await apiRequest<unknown>("/api/auth/register", {
+): Promise<{ email: string; message: string }> {
+  // 1. Firebase'de kullanıcı oluştur
+  const cred = await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
+  // 2. Firebase profiline isim yaz (isteğe bağlı, iyi pratik)
+  await updateProfile(cred.user, { displayName: `${name.trim()} ${surname.trim()}` });
+  // 3. Backend'e kaydet (yerel DB + doğrulama e-postası)
+  const idToken = await cred.user.getIdToken();
+  const raw = await apiRequest<Record<string, unknown>>("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ name, surname, email, password }),
+    body: JSON.stringify({ idToken, name: name.trim(), surname: surname.trim() }),
   });
-  return parseAuthResponse(raw);
+  // Firebase oturumunu kapat (kullanıcı önce e-posta doğrulamalı)
+  await signOut(firebaseAuth);
+  return {
+    email: String(raw.email ?? raw.Email ?? email),
+    message: String(raw.message ?? raw.Message ?? "Doğrulama e-postası gönderildi."),
+  };
 }
 
 export async function forgotPassword(email: string): Promise<{ message: string }> {
@@ -78,6 +98,21 @@ export async function resetPassword(token: string, newPassword: string): Promise
     method: "POST",
     body: JSON.stringify({ token, newPassword }),
   });
+}
+
+export type ResetTokenStatus = "valid" | "expired" | "invalid";
+
+export async function validateResetToken(token: string): Promise<ResetTokenStatus> {
+  try {
+    const raw = await apiRequest<Record<string, unknown>>(
+      `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`,
+    );
+    const status = String(raw.status ?? "invalid");
+    if (status === "valid" || status === "expired") return status;
+    return "invalid";
+  } catch {
+    return "invalid";
+  }
 }
 
 /**
@@ -110,4 +145,33 @@ export async function loginWithGoogle(): Promise<AuthResponseDto> {
 /** Firebase oturumunu sonlandırır. Backend JWT'sini temizlemek çağıran tarafın sorumluluğundadır. */
 export async function firebaseSignOut(): Promise<void> {
   await signOut(firebaseAuth);
+}
+
+export type VerifyEmailResult = "success" | "already_verified" | "expired" | "invalid";
+
+/** Doğrulama bağlantısından gelen token'ı backend'e iletir. */
+export async function verifyEmail(token: string): Promise<VerifyEmailResult> {
+  try {
+    const raw = await apiRequest<Record<string, unknown>>(
+      `/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+    );
+    const status = String(raw.status ?? "invalid");
+    if (status === "success" || status === "already_verified" || status === "expired") return status;
+    return "invalid";
+  } catch {
+    return "invalid";
+  }
+}
+
+/** Doğrulama e-postasını yeniden gönderir. */
+export async function resendVerificationEmail(email: string): Promise<void> {
+  await apiRequest("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+/** Oturum açmış kullanıcının KVKK onayını backend'e kaydeder. */
+export async function acceptKvkkConsent(): Promise<void> {
+  await apiRequest("/api/auth/accept-consent", { method: "POST" });
 }

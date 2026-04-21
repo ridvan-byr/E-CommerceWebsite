@@ -277,59 +277,76 @@ export default function ProductSearchPage() {
           {products.map((product, i) => {
             const status = getProductStatusInfo(product.status);
             return (
-              <FadeUp key={product.productId} delay={i * 40} distance={20}>
-              <div
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group h-full"
-              >
-                <div className="relative h-44 overflow-hidden bg-slate-100">
+              <FadeUp key={product.productId} delay={i * 40} distance={20} className="flex flex-col">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col flex-1">
+                {/* Görsel */}
+                <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-100 flex-shrink-0">
                   <img
                     src={img(product)}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                   />
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
                   <span
-                    className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full ${status.className}`}
+                    className={`absolute top-2.5 right-2.5 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm ${status.className}`}
                   >
                     {status.label}
                   </span>
                   {product.isDiscount && product.originalPrice != null && (
-                    <span className="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full bg-red-500 text-white">
+                    <span className="absolute top-2.5 left-2.5 text-xs font-bold px-2.5 py-1 rounded-full bg-red-500 text-white shadow-sm">
                       -%{Math.round((1 - product.price / product.originalPrice) * 100)}
                     </span>
                   )}
                 </div>
-                <div className="p-4">
-                  <p className="text-slate-500 text-xs mb-1">{product.categoryName ?? "—"}</p>
-                  {product.barcode && (
-                    <p className="text-slate-400 text-[10px] font-mono mb-1 truncate" title={product.barcode}>
-                      {product.barcode}
-                    </p>
-                  )}
-                  <h3 className="text-slate-900 font-semibold text-sm leading-tight mb-2 line-clamp-1">{product.name}</h3>
-                  <p className="text-slate-400 text-xs mb-3">Stok: {product.stock}</p>
-                  <div className="flex items-center justify-between">
+
+                {/* İçerik */}
+                <div className="p-4 flex flex-col flex-1">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wide truncate">
+                      {product.categoryName ?? "—"}
+                    </span>
+                    {product.barcode && (
+                      <>
+                        <span className="text-slate-300 text-[10px]">·</span>
+                        <span className="text-slate-400 text-[10px] font-mono truncate" title={product.barcode}>
+                          {product.barcode}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <h3 className="text-slate-900 font-semibold text-sm leading-snug mb-1 line-clamp-2 flex-1">
+                    {product.name}
+                  </h3>
+                  <p className="text-slate-400 text-xs mb-3">
+                    Stok: <span className="text-slate-600 font-medium">{product.stock}</span>
+                  </p>
+                  <div className="flex items-end justify-between gap-2 mt-auto pt-3 border-t border-slate-50">
                     <div>
-                      <span className="text-slate-900 font-bold text-base">
+                      <span className="text-slate-900 font-bold text-base leading-none">
                         ₺{product.price.toLocaleString("tr-TR")}
                       </span>
                       {product.isDiscount && product.originalPrice != null && (
-                        <p className="text-slate-400 text-xs line-through">
+                        <p className="text-slate-400 text-xs line-through mt-0.5">
                           ₺{product.originalPrice.toLocaleString("tr-TR")}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       <Link
                         href={`/products/${product.productId}/preview`}
-                        className="flex items-center gap-1 h-8 px-3 rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 text-xs font-semibold transition-all"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 transition-all"
+                        title="Önizle"
                       >
-                        <Eye size={12} />
+                        <Eye size={13} />
                       </Link>
                       <Link
                         href={`/products/${product.productId}`}
-                        className="flex items-center gap-1 h-8 px-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-semibold transition-all"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all"
+                        title="Düzenle"
                       >
-                        <Edit2 size={12} />
+                        <Edit2 size={13} />
                       </Link>
                     </div>
                   </div>

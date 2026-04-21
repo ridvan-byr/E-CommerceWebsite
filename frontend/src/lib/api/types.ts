@@ -114,6 +114,7 @@ export interface UserProfileDto {
   email: string;
   role: string;
   photoUrl?: string | null;
+  kvkkAccepted: boolean;
 }
 
 export interface AuthResponseDto {

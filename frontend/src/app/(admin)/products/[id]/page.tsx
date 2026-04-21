@@ -6,7 +6,7 @@ import {
   ArrowLeft,
   Package,
   DollarSign,
-  Image,
+  ImageIcon,
   AlertCircle,
   X,
   Layers,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { fetchCategories } from "@/lib/api/categoriesApi";
 import { fetchProduct, updateProduct } from "@/lib/api/productsApi";
+import ImageUpload from "@/components/ImageUpload";
 import {
   createProductFeature,
   deleteProductFeature,
@@ -517,15 +518,13 @@ export default function ProductEditPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <Image size={18} className="text-purple-600" />
+            <ImageIcon size={18} className="text-purple-600" />
             <h3 className="font-semibold text-slate-900">Görsel & durum</h3>
           </div>
-          <input
-            type="url"
+          <ImageUpload
             value={form.image}
-            onChange={(e) => set("image", e.target.value)}
-            placeholder="Görsel URL"
-            className={inputClass("image")}
+            onChange={(url) => set("image", url)}
+            disabled={loadInit}
           />
           <div className="flex gap-2">
             {(["active", "inactive", "draft"] as const).map((s) => (
