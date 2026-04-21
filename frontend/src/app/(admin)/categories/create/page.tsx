@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Tag } from "lucide-react";
 import { createCategory } from "@/lib/api/categoriesApi";
 import { ApiRequestError } from "@/lib/api/client";
+import FadeUp from "@/components/FadeUp";
 
 export default function CategoryCreatePage() {
   const router = useRouter();
@@ -53,15 +54,20 @@ export default function CategoryCreatePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Link href="/categories" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
-        <ArrowLeft size={16} />
-        Kategorilere Dön
-      </Link>
+      <FadeUp delay={0}>
+        <Link href="/categories" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
+          <ArrowLeft size={16} />
+          Kategorilere Dön
+        </Link>
+      </FadeUp>
 
       {apiError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+        <FadeUp delay={0}>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+        </FadeUp>
       )}
 
+      <FadeUp delay={80}>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -109,6 +115,7 @@ export default function CategoryCreatePage() {
           </button>
         </div>
       </form>
+      </FadeUp>
     </div>
   );
 }

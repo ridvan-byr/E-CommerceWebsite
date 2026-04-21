@@ -113,6 +113,7 @@ export interface UserProfileDto {
   surname: string;
   email: string;
   role: string;
+  photoUrl?: string | null;
 }
 
 export interface AuthResponseDto {

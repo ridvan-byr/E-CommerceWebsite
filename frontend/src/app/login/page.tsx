@@ -13,7 +13,8 @@ import {
   BarChart3,
   Lock,
 } from "lucide-react";
-import { login } from "@/lib/api/authApi";
+import { FirebaseError } from "firebase/app";
+import { loginWithFirebase, loginWithGoogle } from "@/lib/api/authApi";
 import { ApiRequestError, setStoredAccessToken } from "@/lib/api/client";
 
 export default function LoginPage() {
@@ -24,6 +25,47 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const translateFirebaseError = (code: string): string => {
+    switch (code) {
+      case "auth/invalid-credential":
+      case "auth/wrong-password":
+      case "auth/user-not-found":
+        return "E-posta veya şifre hatalı.";
+      case "auth/invalid-email":
+        return "Geçersiz e-posta adresi.";
+      case "auth/user-disabled":
+        return "Bu hesap devre dışı bırakılmış.";
+      case "auth/too-many-requests":
+        return "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.";
+      case "auth/network-request-failed":
+        return "Ağ hatası. Bağlantınızı kontrol edin.";
+      case "auth/popup-closed-by-user":
+      case "auth/cancelled-popup-request":
+        return "Giriş penceresi kapatıldı.";
+      default:
+        return "Giriş yapılamadı. Lütfen tekrar deneyin.";
+    }
+  };
+
+  const handleAuthError = (err: unknown) => {
+    if (err instanceof FirebaseError) {
+      setError(translateFirebaseError(err.code));
+      return;
+    }
+    if (err instanceof ApiRequestError) {
+      const msg =
+        typeof err.body === "object" &&
+        err.body !== null &&
+        "message" in err.body &&
+        typeof (err.body as { message: unknown }).message === "string"
+          ? (err.body as { message: string }).message
+          : err.message;
+      setError(msg);
+      return;
+    }
+    setError("Giriş yapılamadı. Bağlantınızı kontrol edin.");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -33,22 +75,25 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      const result = await login(email.trim(), password);
+      const result = await loginWithFirebase(email.trim(), password);
       setStoredAccessToken(result.accessToken);
       router.push("/dashboard");
     } catch (err) {
-      if (err instanceof ApiRequestError) {
-        const msg =
-          typeof err.body === "object" &&
-          err.body !== null &&
-          "message" in err.body &&
-          typeof (err.body as { message: unknown }).message === "string"
-            ? (err.body as { message: string }).message
-            : err.message;
-        setError(msg);
-      } else {
-        setError("Giriş yapılamadı. Bağlantınızı kontrol edin.");
-      }
+      handleAuthError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const result = await loginWithGoogle();
+      setStoredAccessToken(result.accessToken);
+      router.push("/dashboard");
+    } catch (err) {
+      handleAuthError(err);
     } finally {
       setLoading(false);
     }
@@ -241,6 +286,30 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-3 text-slate-400 uppercase tracking-wider">veya</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full h-11 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-60 text-slate-700 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-3 border border-slate-200 shadow-sm"
+          >
+            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.8 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.3-3.5z" />
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.8 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z" />
+              <path fill="#4CAF50" d="M24 43.5c5.1 0 9.7-1.9 13.2-5.1l-6.1-5c-2 1.4-4.5 2.1-7.1 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z" />
+              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.4-2.4 4.4-4.4 5.9l6.1 5c-.4.4 6.5-4.7 6.5-14.9 0-1.2-.1-2.3-.3-3.5z" />
+            </svg>
+            Google ile giriş yap
+          </button>
 
           <p className="text-center text-sm text-slate-500 mt-8">
             Hesabınız yok mu?{" "}

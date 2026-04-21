@@ -7,6 +7,7 @@ import { fetchCategories, deleteCategory } from "@/lib/api/categoriesApi";
 import type { CategoryDto } from "@/lib/api/types";
 import { ApiRequestError } from "@/lib/api/client";
 import { useToast } from "@/components/Toast";
+import FadeUp from "@/components/FadeUp";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -81,6 +82,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
+      <FadeUp delay={0}>
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -100,6 +102,7 @@ export default function CategoriesPage() {
           Yeni kategori
         </Link>
       </div>
+      </FadeUp>
 
       {loadError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center justify-between gap-3">
@@ -110,6 +113,7 @@ export default function CategoriesPage() {
         </div>
       )}
 
+      <FadeUp delay={80}>
       {loading ? (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
@@ -221,6 +225,7 @@ export default function CategoriesPage() {
           </div>
         </>
       )}
+      </FadeUp>
 
       {deleteId !== null && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">

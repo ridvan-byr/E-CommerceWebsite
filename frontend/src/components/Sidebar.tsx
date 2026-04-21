@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { fetchCurrentUser } from "@/lib/api/authApi";
-import type { UserProfileDto } from "@/lib/api/types";
-import { getStoredAccessToken, setStoredAccessToken } from "@/lib/api/client";
+import { setStoredAccessToken } from "@/lib/api/client";
+import { firebaseSignOut } from "@/lib/api/authApi";
+import { useCurrentUser, displayName } from "@/lib/currentUser";
+import UserAvatar from "@/components/UserAvatar";
 import {
   LayoutDashboard,
   Tag,
@@ -49,50 +49,17 @@ const navGroups = [
   },
 ];
 
-function displayName(p: UserProfileDto): string {
-  const parts = [p.name?.trim(), p.surname?.trim()].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : p.email;
-}
-
-
-function avatarLetter(p: UserProfileDto): string {
-  const n = p.name?.trim();
-  if (n) return n[0].toLocaleUpperCase("tr-TR");
-  const s = p.surname?.trim();
-  if (s) return s[0].toLocaleUpperCase("tr-TR");
-  const e = p.email?.trim();
-  if (e) return e[0].toUpperCase();
-  return "?";
-}
-
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfileDto | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { profile, loading: profileLoading } = useCurrentUser();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!getStoredAccessToken()) {
-        setProfileLoading(false);
-        return;
-      }
-      try {
-        const p = await fetchCurrentUser();
-        if (!cancelled) setProfile(p);
-      } catch {
-        if (!cancelled) setProfile(null);
-      } finally {
-        if (!cancelled) setProfileLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await firebaseSignOut();
+    } catch {
+      // Firebase oturumu zaten yoksa sorun değil.
+    }
     setStoredAccessToken(null);
     router.push("/login");
   };
@@ -226,25 +193,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             collapsed ? "justify-center" : ""
           }`}
         >
-          <div
-            className="w-9 h-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg select-none"
-            title={
-              collapsed
-                ? profile
-                  ? displayName(profile)
-                  : undefined
-                : undefined
-            }
-            aria-hidden
-          >
-            {profileLoading ? (
-              <span className="text-slate-200/80 animate-pulse">·</span>
-            ) : profile ? (
-              avatarLetter(profile)
-            ) : (
-              "?"
-            )}
-          </div>
+          <UserAvatar
+            profile={profile}
+            loading={profileLoading}
+            size={36}
+            className="text-sm shadow-lg"
+            title={collapsed && profile ? displayName(profile) : undefined}
+          />
           <div
             className={`overflow-hidden transition-all duration-300 min-w-0 ${
               collapsed ? "w-0 opacity-0" : "w-auto opacity-100"

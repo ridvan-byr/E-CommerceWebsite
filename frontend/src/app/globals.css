@@ -15,6 +15,22 @@
   }
 }
 
+/* Sayfa geçiş animasyonu — alttan üste kayma */
+@keyframes page-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-slide-up {
+  animation: page-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Ürün listesi toast — sadece transform/opacity (hafif) */
 @keyframes toast-progress {
   from {

@@ -25,6 +25,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { dashboardStats, recentOrders } from "@/lib/mockData";
 import { getProductStatusInfo } from "@/lib/productStatus";
 import { resolveImageUrl } from "@/lib/imageUrl";
+import FadeUp from "@/components/FadeUp";
 
 const CATEGORY_BAR_COLORS = [
   "bg-indigo-500",
@@ -112,6 +113,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Hero greeting card */}
+      <FadeUp delay={0}>
       <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 p-6 lg:p-8 text-white shadow-[0_10px_40px_-20px_rgb(15_23_42/0.6)]">
         <div
           aria-hidden
@@ -170,18 +172,22 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+      </FadeUp>
 
       {loadError && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <AlertCircle size={16} />
-          <span className="flex-1">{loadError}</span>
-        </div>
+        <FadeUp delay={50}>
+          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <AlertCircle size={16} />
+            <span className="flex-1">{loadError}</span>
+          </div>
+        </FadeUp>
       )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Recent Orders (mock) */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm xl:col-span-2">
+        <FadeUp delay={80} className="xl:col-span-2">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm h-full">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
             <div className="flex items-center gap-3">
               <div>
@@ -230,8 +236,10 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+        </FadeUp>
 
         {/* Category Overview (live) */}
+        <FadeUp delay={160}>
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
             <div>
@@ -295,9 +303,11 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+        </FadeUp>
       </div>
 
       {/* Top Products (live) */}
+      <FadeUp delay={100}>
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
@@ -426,20 +436,23 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
+      </FadeUp>
 
-      <div className="flex items-center gap-2 text-xs text-slate-400">
-        <Clock size={12} />
-        <span>
-          Son güncelleme:{" "}
-          {new Date().toLocaleDateString("tr-TR", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
-      </div>
+      <FadeUp delay={60}>
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <Clock size={12} />
+          <span>
+            Son güncelleme:{" "}
+            {new Date().toLocaleDateString("tr-TR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+      </FadeUp>
     </div>
   );
 }

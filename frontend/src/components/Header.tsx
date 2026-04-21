@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { Bell, Settings } from "lucide-react";
+import { useCurrentUser } from "@/lib/currentUser";
+import UserAvatar from "@/components/UserAvatar";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Genel bakış ve istatistikler" },
@@ -14,6 +16,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
 
 export default function Header() {
   const pathname = usePathname();
+  const { profile, loading } = useCurrentUser();
 
   const getPageInfo = () => {
     if (pageTitles[pathname]) return pageTitles[pathname];
@@ -35,16 +38,17 @@ export default function Header() {
         {subtitle && <p className="text-slate-500 text-xs mt-0.5">{subtitle}</p>}
       </div>
 
-      <div className="flex items-center gap-2">
-        <button className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+      <div className="flex items-center gap-3">
+        <button className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer">
           <Bell size={18} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
         </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+        <button className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer">
           <Settings size={18} />
         </button>
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-md ml-1 cursor-pointer">
-          A
+
+        <div className="pl-3 ml-1 border-l border-slate-200">
+          <UserAvatar profile={profile} loading={loading} size={36} className="text-sm cursor-pointer" />
         </div>
       </div>
     </header>

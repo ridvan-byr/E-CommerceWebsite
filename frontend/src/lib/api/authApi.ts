@@ -1,15 +1,24 @@
+import {
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
+import { auth as firebaseAuth } from "@/lib/firebase";
 import { apiRequest } from "./client";
 import type { AuthResponseDto, UserProfileDto } from "./types";
 
 /** Supports both camelCase and PascalCase JSON from the API. */
 function parseUserProfile(data: unknown): UserProfileDto {
   const u = data as Record<string, unknown>;
+  const photoRaw = u.photoUrl ?? u.PhotoUrl;
   return {
     userId: Number(u.userId ?? u.UserId ?? 0),
     name: String(u.name ?? u.Name ?? ""),
     surname: String(u.surname ?? u.Surname ?? ""),
     email: String(u.email ?? u.Email ?? ""),
     role: String(u.role ?? u.Role ?? ""),
+    photoUrl: typeof photoRaw === "string" && photoRaw.length > 0 ? photoRaw : null,
   };
 }
 
@@ -69,4 +78,36 @@ export async function resetPassword(token: string, newPassword: string): Promise
     method: "POST",
     body: JSON.stringify({ token, newPassword }),
   });
+}
+
+/**
+ * Verilen Firebase ID Token'ı backend'e gönderir, doğrulanırsa
+ * backend kendi JWT'sini döner (diğer API çağrıları bu JWT ile yapılır).
+ */
+async function exchangeFirebaseIdTokenForJwt(idToken: string): Promise<AuthResponseDto> {
+  const raw = await apiRequest<unknown>("/api/auth/firebase-login", {
+    method: "POST",
+    body: JSON.stringify({ idToken }),
+  });
+  return parseAuthResponse(raw);
+}
+
+/** Firebase üzerinden e-posta + şifre ile giriş yapar ve backend JWT'sini döner. */
+export async function loginWithFirebase(email: string, password: string): Promise<AuthResponseDto> {
+  const cred = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
+  const idToken = await cred.user.getIdToken();
+  return exchangeFirebaseIdTokenForJwt(idToken);
+}
+
+/** Firebase üzerinden Google popup ile giriş yapar ve backend JWT'sini döner. */
+export async function loginWithGoogle(): Promise<AuthResponseDto> {
+  const provider = new GoogleAuthProvider();
+  const cred = await signInWithPopup(firebaseAuth, provider);
+  const idToken = await cred.user.getIdToken();
+  return exchangeFirebaseIdTokenForJwt(idToken);
+}
+
+/** Firebase oturumunu sonlandırır. Backend JWT'sini temizlemek çağıran tarafın sorumluluğundadır. */
+export async function firebaseSignOut(): Promise<void> {
+  await signOut(firebaseAuth);
 }

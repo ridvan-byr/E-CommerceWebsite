@@ -19,6 +19,7 @@ import type { ProductDto } from "@/lib/api/types";
 import type { CategoryDto } from "@/lib/api/types";
 import { getProductStatusInfo } from "@/lib/productStatus";
 import { resolveImageUrl } from "@/lib/imageUrl";
+import FadeUp from "@/components/FadeUp";
 
 const img = (p: ProductDto) =>
   resolveImageUrl(p.imageUrl) || "https://placehold.co/96x96/e2e8f0/64748b?text=Ü";
@@ -97,6 +98,7 @@ export default function ProductSearchPage() {
 
   return (
     <div className="space-y-6">
+      <FadeUp delay={0}>
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <div className="flex gap-3">
           <div className="relative flex-1">
@@ -244,7 +246,9 @@ export default function ProductSearchPage() {
           </div>
         </div>
       </div>
+      </FadeUp>
 
+      <FadeUp delay={80}>
       {loading ? (
         <div className="flex items-center justify-center py-24 text-slate-500 gap-2">
           <Loader2 className="animate-spin" size={22} />
@@ -270,12 +274,12 @@ export default function ProductSearchPage() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {products.map((product) => {
+          {products.map((product, i) => {
             const status = getProductStatusInfo(product.status);
             return (
+              <FadeUp key={product.productId} delay={i * 40} distance={20}>
               <div
-                key={product.productId}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group h-full"
               >
                 <div className="relative h-44 overflow-hidden bg-slate-100">
                   <img
@@ -331,6 +335,7 @@ export default function ProductSearchPage() {
                   </div>
                 </div>
               </div>
+              </FadeUp>
             );
           })}
         </div>
@@ -392,6 +397,7 @@ export default function ProductSearchPage() {
           </div>
         </div>
       )}
+      </FadeUp>
     </div>
   );
 }
