@@ -14,4 +14,16 @@ public class User
 
     public string? PasswordResetToken { get; set; }
     public DateTime? PasswordResetTokenExpiry { get; set; }
+
+    /// <summary>
+    /// Firebase Authentication UID — kullanıcı Firebase üzerinden giriş yaptığında
+    /// yerel User kaydıyla eşleştirme için kullanılır. Eski/sadece e-posta+şifre ile
+    /// kayıtlı kullanıcılar için null olabilir.
+    /// </summary>
+    public string? FirebaseUid { get; set; }
+
+    /// <summary>
+    /// Kullanıcı profil fotoğrafı URL'i (Firebase / Google). Yoksa null.
+    /// </summary>
+    public string? PhotoUrl { get; set; }
 }

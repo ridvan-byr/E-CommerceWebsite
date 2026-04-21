@@ -45,6 +45,10 @@ public class DataContext : DbContext{
             e.HasIndex(p => new { p.ProductId, p.FeatureId }).IsUnique();
         });
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.FirebaseUid)
+            .IsUnique()
+            .HasFilter("[FirebaseUid] IS NOT NULL");
 
         modelBuilder.Entity<Feature>(e =>
         {

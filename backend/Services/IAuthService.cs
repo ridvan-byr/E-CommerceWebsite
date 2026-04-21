@@ -8,6 +8,14 @@ public interface IAuthService
 
     Task<AuthResponseDto?> LoginAsync(LoginRequestDto dto, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Firebase ID Token ile giriş yapar. Token geçerliyse yerel kullanıcı
+    /// kaydı bulunur veya otomatik oluşturulur (Customer rolüyle).
+    /// Başarılıysa kendi backend JWT'sini içeren yanıt döner.
+    /// Token geçersizse null döner.
+    /// </summary>
+    Task<AuthResponseDto?> LoginWithFirebaseAsync(string idToken, CancellationToken cancellationToken = default);
+
     Task<UserProfileDto?> GetProfileAsync(int userId, CancellationToken cancellationToken = default);
 
     Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken = default);

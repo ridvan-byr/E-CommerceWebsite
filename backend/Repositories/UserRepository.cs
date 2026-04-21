@@ -68,6 +68,19 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
     }
 
+    public async Task<User?> GetByFirebaseUidAsync(string firebaseUid, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid, cancellationToken);
+    }
+
+    public async Task<User?> GetByFirebaseUidTrackingAsync(string firebaseUid, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.FirebaseUid == firebaseUid, cancellationToken);
+    }
+
     public Task<bool> EmailExistsAsync(string normalizedEmail, CancellationToken cancellationToken = default)
     {
         return _context.Users.AnyAsync(u => u.Email == normalizedEmail, cancellationToken);

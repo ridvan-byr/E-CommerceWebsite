@@ -43,6 +43,26 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Firebase Authentication ID Token ile giriş. Frontend Firebase ile
+    /// signIn yaptıktan sonra aldığı ID Token'ı buraya gönderir; backend
+    /// doğrular, gerekirse yerel User kaydını oluşturur ve kendi JWT'sini döner.
+    /// </summary>
+    [HttpPost("firebase-login")]
+    public async Task<IActionResult> FirebaseLogin(
+        [FromBody] FirebaseLoginRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.LoginWithFirebaseAsync(dto.IdToken, cancellationToken);
+        if (result is null)
+            return Unauthorized(new { message = "Firebase kimlik doğrulaması başarısız." });
+
+        return Ok(result);
+    }
+
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto, CancellationToken cancellationToken = default)
     {

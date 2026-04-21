@@ -9,7 +9,8 @@ using backend.Middleware;
 using backend.Options;
 using backend.Services;
 using backend.Repositories;
-
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,26 @@ builder.Services.AddControllers()
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
 builder.Services.Configure<AppUrlOptions>(builder.Configuration.GetSection(AppUrlOptions.SectionName));
+builder.Services.Configure<FirebaseOptions>(builder.Configuration.GetSection(FirebaseOptions.SectionName));
+
+// Firebase Admin SDK — ID token doğrulaması için yalnızca bir kez başlatılır.
+if (FirebaseApp.DefaultInstance is null)
+{
+    var firebaseOptions = builder.Configuration.GetSection(FirebaseOptions.SectionName).Get<FirebaseOptions>()
+        ?? new FirebaseOptions();
+    var saPath = Path.IsPathRooted(firebaseOptions.ServiceAccountPath)
+        ? firebaseOptions.ServiceAccountPath
+        : Path.Combine(AppContext.BaseDirectory, firebaseOptions.ServiceAccountPath);
+    if (!File.Exists(saPath))
+    {
+        // AppContext.BaseDirectory bin klasörünü gösterebilir; proje köküne de bakalım.
+        saPath = Path.Combine(Directory.GetCurrentDirectory(), firebaseOptions.ServiceAccountPath);
+    }
+    FirebaseApp.Create(new AppOptions
+    {
+        Credential = GoogleCredential.FromFile(saPath),
+    });
+}
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt ayarları eksik.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,6 +81,7 @@ builder.Services.AddScoped<IFeatureService, FeatureService>();
 builder.Services.AddScoped<IProductFeatureRepository, ProductFeatureRepository>();
 builder.Services.AddScoped<IProductFeatureService, ProductFeatureService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<IImageStorageService, ImageStorageService>();
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();

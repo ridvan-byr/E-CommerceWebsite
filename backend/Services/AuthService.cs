@@ -5,6 +5,7 @@ using backend.DTOs;
 using backend.Models;
 using backend.Options;
 using backend.Repositories;
+using FirebaseAdmin.Auth;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -13,6 +14,7 @@ namespace backend.Services;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IFirebaseAuthService _firebaseAuth;
     private readonly JwtOptions _jwt;
     private readonly AppUrlOptions _appUrl;
     private readonly IEmailSender _emailSender;
@@ -20,12 +22,14 @@ public class AuthService : IAuthService
 
     public AuthService(
         IUserRepository userRepository,
+        IFirebaseAuthService firebaseAuth,
         IOptions<JwtOptions> jwtOptions,
         IOptions<AppUrlOptions> appUrlOptions,
         IEmailSender emailSender,
         ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
+        _firebaseAuth = firebaseAuth;
         _jwt = jwtOptions.Value;
         _appUrl = appUrlOptions.Value;
         _emailSender = emailSender;
@@ -82,6 +86,108 @@ public class AuthService : IAuthService
         return BuildAuthResponse(user);
     }
 
+    public async Task<AuthResponseDto?> LoginWithFirebaseAsync(string idToken, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(idToken))
+            return null;
+
+        FirebaseToken decoded;
+        try
+        {
+            decoded = await _firebaseAuth.VerifyIdTokenAsync(idToken, cancellationToken);
+        }
+        catch (FirebaseAuthException ex)
+        {
+            _logger.LogWarning(ex, "Firebase ID Token doğrulanamadı.");
+            return null;
+        }
+
+        var uid = decoded.Uid;
+        var claims = decoded.Claims;
+
+        var email = claims.TryGetValue("email", out var e) && e is string es
+            ? NormalizeEmail(es)
+            : null;
+        var displayName = claims.TryGetValue("name", out var n) && n is string ns ? ns : null;
+        var photoUrl = claims.TryGetValue("picture", out var p) && p is string ps && ps.Length > 0
+            ? ps
+            : null;
+
+        var user = await _userRepository.GetByFirebaseUidTrackingAsync(uid, cancellationToken);
+
+        if (user is null && email is not null)
+        {
+            // Aynı e-postaya sahip yerel kullanıcı varsa Firebase UID'sini bağla.
+            user = await _userRepository.GetByEmailTrackingAsync(email, cancellationToken);
+            if (user is not null)
+            {
+                user.FirebaseUid = uid;
+                if (photoUrl is not null) user.PhotoUrl = photoUrl;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _userRepository.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Mevcut kullanıcı Firebase UID'ye bağlandı: {Email}", email);
+            }
+        }
+
+        if (user is null)
+        {
+            if (email is null)
+            {
+                _logger.LogWarning("Firebase token e-posta içermiyor, kullanıcı oluşturulamadı: {Uid}", uid);
+                return null;
+            }
+
+            var (firstName, lastName) = SplitDisplayName(displayName, email);
+            var role = (await _userRepository.AnyAsync(cancellationToken)) ? "Customer" : "Admin";
+
+            user = new User
+            {
+                Name = firstName,
+                Surname = lastName,
+                Email = email,
+                FirebaseUid = uid,
+                PhotoUrl = photoUrl,
+                // Firebase üzerinden yönetilen kullanıcılar için şifre hash'i kullanılmaz;
+                // yine de null olmaması için boş ama yerel login'i engelleyen bir değer atıyoruz.
+                PasswordHash = "FIREBASE",
+                Role = role,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            await _userRepository.AddAsync(user, cancellationToken);
+            await _userRepository.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Firebase ile yeni kullanıcı oluşturuldu: {Email} (rol: {Role})", email, role);
+        }
+        else if (photoUrl is not null && user.PhotoUrl != photoUrl)
+        {
+            // Mevcut kullanıcıda fotoğraf güncellendiyse senkronize et.
+            user.PhotoUrl = photoUrl;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userRepository.SaveChangesAsync(cancellationToken);
+        }
+
+        if (!user.IsActive)
+        {
+            _logger.LogWarning("Firebase girişi: pasif hesap {Email}", user.Email);
+            return null;
+        }
+
+        return BuildAuthResponse(user);
+    }
+
+    private static (string First, string Last) SplitDisplayName(string? displayName, string fallbackEmail)
+    {
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            var parts = displayName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2) return (parts[0], parts[1]);
+            if (parts.Length == 1) return (parts[0], string.Empty);
+        }
+        var local = fallbackEmail.Split('@')[0];
+        return (local, string.Empty);
+    }
+
     public async Task<UserProfileDto?> GetProfileAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
@@ -108,6 +214,7 @@ public class AuthService : IAuthService
             Surname = user.Surname,
             Email = user.Email,
             Role = user.Role,
+            PhotoUrl = user.PhotoUrl,
         };
 
     private string CreateJwtToken(User user, DateTime expiresUtc)

@@ -17,6 +17,15 @@ public interface IUserRepository
 
     Task<User?> GetByEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Firebase UID ile eşleşen kullanıcı. Yoksa null döner.
+    /// Mevcut eşleştirmeyi güncelleyebilmek için tracking'li kullanım gerekirse
+    /// <see cref="GetByFirebaseUidTrackingAsync"/> tercih edilmelidir.
+    /// </summary>
+    Task<User?> GetByFirebaseUidAsync(string firebaseUid, CancellationToken cancellationToken = default);
+
+    Task<User?> GetByFirebaseUidTrackingAsync(string firebaseUid, CancellationToken cancellationToken = default);
+
     Task<bool> EmailExistsAsync(string normalizedEmail, CancellationToken cancellationToken = default);
 
     /// <summary>Sistemde herhangi bir kullanıcı var mı? (İlk kayıtta admin atamak için.)</summary>

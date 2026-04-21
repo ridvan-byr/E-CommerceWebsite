@@ -7,4 +7,7 @@ public class UserProfileDto
     public string Surname { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+
+    /// <summary>Firebase/Google profil fotoğrafı. Yoksa null.</summary>
+    public string? PhotoUrl { get; set; }
 }
