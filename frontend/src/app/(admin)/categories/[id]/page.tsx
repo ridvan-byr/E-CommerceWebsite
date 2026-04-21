@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, Tag, AlertCircle } from "lucide-react";
+import { ArrowLeft, Tag, AlertCircle } from "lucide-react";
 import { fetchCategory, updateCategory } from "@/lib/api/categoriesApi";
 import { ApiRequestError } from "@/lib/api/client";
 
@@ -16,7 +16,6 @@ export default function CategoryEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [loadInit, setLoadInit] = useState(true);
-  const [success, setSuccess] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -40,6 +39,19 @@ export default function CategoryEditPage() {
     };
   }, [categoryId]);
 
+  const redirectToCategoriesAfterCategorySave = (categoryName: string) => {
+    const name = categoryName.trim() || "Kategori";
+    try {
+      sessionStorage.setItem(
+        "ecommerce_categories_flash",
+        JSON.stringify({ variant: "category-update", categoryName: name }),
+      );
+    } catch {
+      /* ignore */
+    }
+    router.push("/categories");
+  };
+
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Kategori adı zorunludur.";
@@ -55,12 +67,11 @@ export default function CategoryEditPage() {
     if (Object.keys(errs).length > 0) return;
     setLoading(true);
     try {
-      await updateCategory(categoryId, {
+      const updated = await updateCategory(categoryId, {
         name: form.name.trim(),
       });
-      setSuccess(true);
-      await new Promise((r) => setTimeout(r, 1200));
-      router.push("/categories");
+      const displayName = updated.name?.trim() || form.name.trim() || "Kategori";
+      redirectToCategoriesAfterCategorySave(displayName);
     } catch (err) {
       setApiError(
         err instanceof ApiRequestError ? err.message : "Güncelleme başarısız."
@@ -106,13 +117,6 @@ export default function CategoryEditPage() {
 
       {apiError && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
-      )}
-
-      {success && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-          <CheckCircle size={20} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-emerald-700 text-sm font-medium">Kategori güncellendi! Yönlendiriliyorsunuz…</p>
-        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -161,7 +165,7 @@ export default function CategoryEditPage() {
           </Link>
           <button
             type="submit"
-            disabled={loading || success}
+            disabled={loading}
             className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2"
           >
             {loading ? (

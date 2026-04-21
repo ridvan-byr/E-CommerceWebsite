@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, Tag } from "lucide-react";
+import { ArrowLeft, Tag } from "lucide-react";
 import { createCategory } from "@/lib/api/categoriesApi";
 import { ApiRequestError } from "@/lib/api/client";
 
@@ -12,7 +12,6 @@ export default function CategoryCreatePage() {
   const [form, setForm] = useState({ name: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const validate = () => {
@@ -30,11 +29,18 @@ export default function CategoryCreatePage() {
     if (Object.keys(errs).length > 0) return;
     setLoading(true);
     try {
-      await createCategory({
+      const created = await createCategory({
         name: form.name.trim(),
       });
-      setSuccess(true);
-      await new Promise((r) => setTimeout(r, 1200));
+      const displayName = created.name?.trim() || form.name.trim() || "Kategori";
+      try {
+        sessionStorage.setItem(
+          "ecommerce_categories_flash",
+          JSON.stringify({ variant: "category-create", categoryName: displayName }),
+        );
+      } catch {
+        /* ignore */
+      }
       router.push("/categories");
     } catch (err) {
       setApiError(
@@ -54,13 +60,6 @@ export default function CategoryCreatePage() {
 
       {apiError && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
-      )}
-
-      {success && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-          <CheckCircle size={20} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-emerald-700 text-sm font-medium">Kategori başarıyla oluşturuldu! Yönlendiriliyorsunuz...</p>
-        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -99,7 +98,7 @@ export default function CategoryCreatePage() {
           </Link>
           <button
             type="submit"
-            disabled={loading || success}
+            disabled={loading}
             className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2"
           >
             {loading ? (

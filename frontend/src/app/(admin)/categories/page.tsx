@@ -2,19 +2,39 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Edit2, Trash2, Package, Loader2, Tag } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Package, Tag } from "lucide-react";
 import { fetchCategories, deleteCategory } from "@/lib/api/categoriesApi";
 import type { CategoryDto } from "@/lib/api/types";
 import { ApiRequestError } from "@/lib/api/client";
+import { useToast } from "@/components/Toast";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem("ecommerce_categories_flash");
+      if (!raw) return;
+      sessionStorage.removeItem("ecommerce_categories_flash");
+      const data = JSON.parse(raw) as { variant?: string; categoryName?: string };
+      if (!data.categoryName) return;
+      if (data.variant === "category-create") {
+        toast.success(`"${data.categoryName}" oluşturuldu.`, "Kategori eklendi");
+      } else if (data.variant === "category-update") {
+        toast.success(`"${data.categoryName}" güncellendi.`, "Kategori güncellendi");
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,17 +60,20 @@ export default function CategoriesPage() {
 
   const handleDelete = async (id: number) => {
     setDeleting(true);
-    setDeleteError(null);
+    const removed = categories.find((c) => c.categoryId === id);
     try {
       await deleteCategory(id);
       setCategories((prev) => prev.filter((c) => c.categoryId !== id));
       setDeleteId(null);
+      toast.success(
+        removed ? `"${removed.name}" silindi.` : "Kategori silindi.",
+        "Silindi",
+      );
     } catch (e) {
-      const msg =
-        e instanceof ApiRequestError
-          ? e.message
-          : "Silinemedi";
-      setDeleteError(msg);
+      toast.error(
+        e instanceof ApiRequestError ? e.message : "Kategori silinemedi.",
+        "Silme başarısız",
+      );
     } finally {
       setDeleting(false);
     }
@@ -87,58 +110,26 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {deleteError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center justify-between gap-3">
-          <span>{deleteError}</span>
-          <button type="button" onClick={() => setDeleteError(null)} className="text-red-700 font-medium shrink-0">
-            Kapat
-          </button>
-        </div>
-      )}
-
       {loading ? (
-        <div className="flex items-center justify-center py-24 text-slate-500 gap-2">
-          <Loader2 className="animate-spin" size={22} />
-          <span className="text-sm">Kategoriler yükleniyor…</span>
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+            <div className="divide-y divide-slate-50">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4">
+                  <div className="skeleton h-11 w-11 rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <div className="skeleton h-3.5 w-40" />
+                    <div className="skeleton h-3 w-16" />
+                  </div>
+                  <div className="skeleton h-6 w-20" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: "Toplam kategori", value: categories.length, color: "text-indigo-600" },
-              {
-                label: "Toplam ürün",
-                value: categories.reduce((s, c) => s + c.productCount, 0),
-                color: "text-emerald-600",
-              },
-              {
-                label: "En çok ürün",
-                value: categories.length ? Math.max(...categories.map((c) => c.productCount)) : 0,
-                color: "text-purple-600",
-              },
-              {
-                label: "Ortalama ürün",
-                value: categories.length
-                  ? Math.round(
-                      categories.reduce((s, c) => s + c.productCount, 0) / categories.length,
-                    )
-                  : 0,
-                color: "text-sky-600",
-              },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <p className="text-slate-500 text-xs font-medium">{label}</p>
-                <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
-              </div>
-            ))}
-          </div>
-
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <p className="text-slate-500 text-sm">
-                <span className="text-slate-900 font-semibold">{filtered.length}</span> kategori listeleniyor
-              </p>
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -152,6 +143,9 @@ export default function CategoriesPage() {
                     <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
                       Oluşturulma
                     </th>
+                    <th className="text-left text-slate-500 text-xs font-semibold uppercase tracking-wide px-4 py-3">
+                      Oluşturan
+                    </th>
                     <th className="text-right text-slate-500 text-xs font-semibold uppercase tracking-wide px-6 py-3">
                       İşlemler
                     </th>
@@ -160,7 +154,7 @@ export default function CategoriesPage() {
                 <tbody className="divide-y divide-slate-50">
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-16 text-center">
+                      <td colSpan={5} className="px-6 py-16 text-center">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center">
                             <Package size={24} className="text-slate-400" />
@@ -194,6 +188,11 @@ export default function CategoriesPage() {
                             {new Date(category.createdAt).toLocaleDateString("tr-TR")}
                           </span>
                         </td>
+                        <td className="px-4 py-4">
+                          <span className="text-slate-700 text-sm">
+                            {category.createdBy?.trim() || "—"}
+                          </span>
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <Link
@@ -205,10 +204,7 @@ export default function CategoriesPage() {
                             </Link>
                             <button
                               type="button"
-                              onClick={() => {
-                                setDeleteError(null);
-                                setDeleteId(category.categoryId);
-                              }}
+                              onClick={() => setDeleteId(category.categoryId)}
                               className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 text-xs font-medium transition-all"
                             >
                               <Trash2 size={13} />
@@ -227,8 +223,8 @@ export default function CategoriesPage() {
       )}
 
       {deleteId !== null && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in">
             <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
               <Trash2 size={22} className="text-red-500" />
             </div>

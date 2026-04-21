@@ -11,7 +11,6 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
-  const [resetToken, setResetToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +21,8 @@ export default function ForgotPasswordPage() {
     }
     setLoading(true);
     try {
-      const res = await forgotPassword(email.trim());
+      await forgotPassword(email.trim());
       setSent(true);
-      if (res.token) setResetToken(res.token);
     } catch (err) {
       if (err instanceof ApiRequestError) {
         const msg =
@@ -151,24 +149,15 @@ export default function ForgotPasswordPage() {
                   Bağlantı gönderildi
                 </h1>
                 <p className="text-slate-500 text-sm mt-1.5">
+                  E-posta adresiniz kayıtlıysa{" "}
                   <span className="font-medium text-slate-700">{email}</span> adresine
-                  şifre sıfırlama talimatları gönderildi.
+                  şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu ve spam klasörünü
+                  kontrol edin.
+                </p>
+                <p className="text-slate-400 text-xs mt-3">
+                  Bağlantı güvenlik nedeniyle 1 saat geçerlidir.
                 </p>
               </div>
-
-              {resetToken && (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                  <p className="text-amber-800 text-xs font-medium mb-2">
-                    Geliştirme modu &mdash; e-posta gönderimi aktif değil
-                  </p>
-                  <Link
-                    href={`/reset-password?token=${resetToken}`}
-                    className="text-indigo-600 text-sm font-semibold underline hover:text-indigo-700 break-all"
-                  >
-                    Şifreyi sıfırla &rarr;
-                  </Link>
-                </div>
-              )}
 
               <Link
                 href="/login"

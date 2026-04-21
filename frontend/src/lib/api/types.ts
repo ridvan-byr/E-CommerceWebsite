@@ -5,8 +5,10 @@ export interface CategoryDto {
   name: string;
   productCount: number;
   isDeleted: boolean;
+  createdByUserId?: number | null;
   createdBy?: string | null;
   createdAt: string;
+  updatedByUserId?: number | null;
   updatedBy?: string | null;
   updatedAt?: string | null;
 }
@@ -26,8 +28,10 @@ export interface ProductDto {
   status: string;
   imageUrl?: string | null;
   isDeleted: boolean;
+  createdByUserId?: number | null;
   createdBy?: string | null;
   createdAt: string;
+  updatedByUserId?: number | null;
   updatedBy?: string | null;
   updatedAt?: string | null;
   features?: ProductFeatureDto[] | null;
@@ -40,16 +44,6 @@ export interface ProductFeatureDto {
   featureName: string;
   value: string;
   sortOrder: number;
-  createdBy?: string | null;
-  createdAt: string;
-  updatedBy?: string | null;
-  updatedAt?: string | null;
-}
-
-export interface FeatureDefinitionDto {
-  featureId: number;
-  name: string;
-  isDeleted: boolean;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;

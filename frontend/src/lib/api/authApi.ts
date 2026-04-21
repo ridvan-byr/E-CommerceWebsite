@@ -54,14 +54,13 @@ export async function register(
   return parseAuthResponse(raw);
 }
 
-export async function forgotPassword(email: string): Promise<{ message: string; token?: string }> {
+export async function forgotPassword(email: string): Promise<{ message: string }> {
   const raw = await apiRequest<Record<string, unknown>>("/api/auth/forgot-password", {
     method: "POST",
     body: JSON.stringify({ email }),
   });
   return {
     message: String(raw.message ?? raw.Message ?? ""),
-    token: (raw.token ?? raw.Token) as string | undefined,
   };
 }
 

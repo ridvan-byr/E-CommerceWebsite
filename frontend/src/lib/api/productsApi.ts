@@ -6,23 +6,17 @@ import type {
   UpdateProductPayload,
 } from "./types";
 
-export async function fetchProductsPage(
-  page = 1,
-  pageSize = 50
-): Promise<PagedResult<ProductDto>> {
-  const q = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-  });
-  return apiRequest<PagedResult<ProductDto>>(`/api/products?${q}`);
-}
-
 export type ProductSearchParams = {
   search?: string;
   categoryId?: number;
   status?: string;
   page?: number;
   pageSize?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  minStock?: number;
+  /** name sırası için boş bırakın; backend: price_asc, price_desc, stock */
+  sortBy?: string;
 };
 
 export async function searchProducts(
@@ -32,6 +26,13 @@ export async function searchProducts(
   if (params.search) q.set("search", params.search);
   if (params.categoryId != null) q.set("categoryId", String(params.categoryId));
   if (params.status) q.set("status", params.status);
+  if (params.minPrice != null && !Number.isNaN(params.minPrice))
+    q.set("minPrice", String(params.minPrice));
+  if (params.maxPrice != null && !Number.isNaN(params.maxPrice))
+    q.set("maxPrice", String(params.maxPrice));
+  if (params.minStock != null && !Number.isNaN(params.minStock))
+    q.set("minStock", String(Math.floor(params.minStock)));
+  if (params.sortBy) q.set("sortBy", params.sortBy);
   q.set("page", String(params.page ?? 1));
   q.set("pageSize", String(params.pageSize ?? 50));
   return apiRequest<PagedResult<ProductDto>>(`/api/products/search?${q}`);

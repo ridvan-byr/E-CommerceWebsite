@@ -6,11 +6,15 @@ export function isValidSku(raw: string): boolean {
   return /^[A-Z0-9][A-Z0-9._\-/]{0,48}[A-Z0-9]$/.test(upper);
 }
 
-/** GS1 GTIN check digit (EAN-8/12/13, GTIN-14). Empty = valid. */
+/**
+ * GS1 GTIN check-digit validator (GTIN-8, GTIN-12/UPC-A, GTIN-13/EAN-13, GTIN-14).
+ * Strict: digits only, no separators or whitespace inside. Empty/whitespace = valid (optional field).
+ */
 export function isValidGtinOrEmpty(barcode: string): boolean {
-  const d = barcode.replace(/\D/g, "");
+  const d = barcode.trim();
   if (d.length === 0) return true;
   if (![8, 12, 13, 14].includes(d.length)) return false;
+  if (!/^\d+$/.test(d)) return false;
   let sum = 0;
   let multiplyThree = true;
   for (let i = d.length - 2; i >= 0; i--) {
