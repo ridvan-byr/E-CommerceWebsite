@@ -1,6 +1,6 @@
 namespace backend.DTOs;
 
-public class CategoryResponseDto
+public class CategoryResponseDto : IAuditable
 {
    public int CategoryId { get; set; }
    public string Name { get; set; } = string.Empty;

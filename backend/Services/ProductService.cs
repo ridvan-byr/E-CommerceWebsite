@@ -35,15 +35,13 @@ public class ProductService : IProductService
     public async Task<ProductResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetActiveByIdAsync(id, cancellationToken);
-        if (product == null)
+        if (product is null)
             return null;
 
-        var dto = MapToResponseDto(product);
-        dto.CategoryName = await _productRepository.GetCategoryNameAsync(product.CategoryId, cancellationToken);
-        var featureRows = await _productFeatureRepository.GetByProductIdAsync(id, cancellationToken);
-        dto.Features = featureRows.Select(pf => new ProductFeatureResponseDto(pf)).ToList();
-        await AuditDtoEnricher.EnrichProductsAsync(new List<ProductResponseDto> { dto }, _userRepository, cancellationToken);
-        return dto;
+        var dtoList = new List<ProductResponseDto> { MapToResponseDto(product) };
+        await AuditDtoEnricher.EnrichAsync(dtoList, _userRepository, cancellationToken);
+
+        return dtoList[0];
     }
 
     public async Task<ProductMutationResult> CreateAsync(CreateProductDto dto, CancellationToken cancellationToken = default)
@@ -88,10 +86,7 @@ public class ProductService : IProductService
         await _productRepository.AddAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 
-        var created = await GetByIdAsync(product.ProductId, cancellationToken);
-        if (created is null)
-            return new ProductMutationResult(null, ProductMutationError.NotFound);
-        return new ProductMutationResult(created, ProductMutationError.None);
+        return new ProductMutationResult(MapToResponseDto(product), ProductMutationError.None);
     }
 
     public async Task<ProductMutationResult> UpdateAsync(int id, UpdateProductDto dto, CancellationToken cancellationToken = default)
@@ -143,10 +138,7 @@ public class ProductService : IProductService
             await _imageStorage.DeleteIfLocalAsync(previousImage, cancellationToken);
         }
 
-        var updated = await GetByIdAsync(id, cancellationToken);
-        if (updated is null)
-            return new ProductMutationResult(null, ProductMutationError.NotFound);
-        return new ProductMutationResult(updated, ProductMutationError.None);
+        return new ProductMutationResult(MapToResponseDto(product), ProductMutationError.None);
     }
 
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -178,7 +170,8 @@ public class ProductService : IProductService
         var size = Math.Clamp(f.PageSize, 1, 100);
 
         var list = items.Select(MapToResponseDto).ToList();
-        await EnrichCategoryNamesAsync(list, cancellationToken);
+        // CategoryName artık Include(p => p.Category) JOIN'inden geliyor;
+        // ayrı sorguya gerek yok.
         await AuditDtoEnricher.EnrichProductsAsync(list, _userRepository, cancellationToken);
 
         return new PagedResult<ProductResponseDto>
@@ -190,26 +183,12 @@ public class ProductService : IProductService
         };
     }
 
-    private async Task EnrichCategoryNamesAsync(List<ProductResponseDto> items, CancellationToken cancellationToken)
-    {
-        if (items.Count == 0)
-            return;
-
-        var map = await _productRepository.GetCategoryNamesByIdsAsync(
-            items.Select(i => i.CategoryId),
-            cancellationToken);
-
-        foreach (var i in items)
-        {
-            if (map.TryGetValue(i.CategoryId, out var name))
-                i.CategoryName = name;
-        }
-    }
 
     private static ProductResponseDto MapToResponseDto(Product product) => new()
     {
         ProductId = product.ProductId,
         CategoryId = product.CategoryId,
+        CategoryName = product.Category?.Name,
         Name = product.Name,
         Description = product.Description,
         Sku = product.Sku,
@@ -218,8 +197,8 @@ public class ProductService : IProductService
         OriginalPrice = product.OriginalPrice,
         IsDiscount = product.IsDiscount,
         Stock = product.Stock,
-        Status = product.Status,
         ImageUrl = product.ImageUrl,
+        Status = product.Status,
         IsDeleted = product.IsDeleted,
         CreatedByUserId = product.CreatedByUserId,
         CreatedBy = product.CreatedBy,
@@ -227,6 +206,7 @@ public class ProductService : IProductService
         UpdatedByUserId = product.UpdatedByUserId,
         UpdatedBy = product.UpdatedBy,
         UpdatedAt = product.UpdatedAt,
+        Features = product.ProductFeatures?.Select(pf => new ProductFeatureResponseDto(pf)).ToList() ?? new List<ProductFeatureResponseDto>()
     };
 
     private static string NormalizeSku(string value) =>

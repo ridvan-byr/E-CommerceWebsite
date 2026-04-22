@@ -17,8 +17,11 @@ public class ProductRepository : IProductRepository
     public async Task<Product?> GetActiveByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.Products
-        .AsNoTracking()
-        .FirstOrDefaultAsync(c => c.ProductId == id && !c.IsDeleted);
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.ProductFeatures)
+                .ThenInclude(pf => pf.Feature)
+            .FirstOrDefaultAsync(p => p.ProductId == id && !p.IsDeleted, cancellationToken);
     }
 
     public async Task<Product?> GetTrackedActiveByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -72,14 +75,15 @@ public class ProductRepository : IProductRepository
             return new Dictionary<int, string>();
 
         
+        var idsList = ids.ToList();
+        if (idsList.Count == 0) return new Dictionary<int, string>();
+
         var rows = await _context.Categories.AsNoTracking()
-            .Where(c => !c.IsDeleted)
+            .Where(c => !c.IsDeleted && idsList.Contains(c.CategoryId))
             .Select(c => new { c.CategoryId, c.Name })
             .ToListAsync(cancellationToken);
 
-        return rows
-            .Where(r => ids.Contains(r.CategoryId))
-            .ToDictionary(x => x.CategoryId, x => x.Name);
+        return rows.ToDictionary(x => x.CategoryId, x => x.Name);
     }
 
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
@@ -97,6 +101,7 @@ public class ProductRepository : IProductRepository
     {
         var query = _context.Products
             .AsNoTracking()
+            .Include(p => p.Category)   // INNER JOIN Products → Categories
             .Where(c => !c.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(f.Search))

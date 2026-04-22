@@ -33,22 +33,6 @@ public interface IAuthService
 
     Task<UserProfileDto?> GetProfileAsync(int userId, CancellationToken cancellationToken = default);
 
-    Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Sıfırlama token'ı üretir ve kullanıcıya e-posta ile bağlantı gönderir.
-    /// Kullanıcı bulunmazsa ya da pasifse hiçbir işlem yapmaz (kullanıcı sayımını açığa çıkarmamak için).
-    /// </summary>
-    Task SendPasswordResetEmailAsync(string email, CancellationToken cancellationToken = default);
-
-    Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Sıfırlama token'ının durumunu döner: Valid, Expired veya NotFound.
-    /// Şifreyi değiştirmeden önce sayfanın yüklendiğinde kontrol etmesi için kullanılır.
-    /// </summary>
-    Task<ResetTokenStatus> ValidateResetTokenAsync(string token, CancellationToken cancellationToken = default);
-
     /// <summary>
     /// E-posta doğrulama token'ını doğrular ve hesabı aktif hale getirir.
     /// </summary>

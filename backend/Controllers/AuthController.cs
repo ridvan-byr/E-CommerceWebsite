@@ -11,10 +11,12 @@ namespace backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IPasswordResetService _passwordResetService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IPasswordResetService passwordResetService)
     {
         _authService = authService;
+        _passwordResetService = passwordResetService;
     }
 
     /// <summary>
@@ -84,7 +86,7 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        await _authService.SendPasswordResetEmailAsync(dto.Email, cancellationToken);
+        await _passwordResetService.SendPasswordResetEmailAsync(dto.Email, cancellationToken);
         return Ok(new { message = "Eğer bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi." });
     }
 
@@ -94,7 +96,7 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(token))
             return BadRequest(new { status = "invalid" });
 
-        var status = await _authService.ValidateResetTokenAsync(token, cancellationToken);
+        var status = await _passwordResetService.ValidateResetTokenAsync(token, cancellationToken);
         return Ok(new
         {
             status = status switch
@@ -112,7 +114,7 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var success = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword, cancellationToken);
+        var success = await _passwordResetService.ResetPasswordAsync(dto.Token, dto.NewPassword, cancellationToken);
         if (!success)
             return BadRequest(new { message = "Geçersiz veya süresi dolmuş token." });
 

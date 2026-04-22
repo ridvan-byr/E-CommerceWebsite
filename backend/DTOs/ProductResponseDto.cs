@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace backend.DTOs;
 
-public class ProductResponseDto
+public class ProductResponseDto : IAuditable
 {
     public int ProductId { get; set; }
     public int CategoryId { get; set; }
