@@ -117,8 +117,9 @@ export interface UserProfileDto {
   kvkkAccepted: boolean;
 }
 
+/** JWT, HttpOnly cookie'de; gövdeye isteğe bağlı (artık normalde dönülmez). */
 export interface AuthResponseDto {
-  accessToken: string;
+  accessToken?: string;
   expiresAtUtc: string;
   user: UserProfileDto;
 }

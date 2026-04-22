@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Settings } from "lucide-react";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -7,6 +8,7 @@ import UserAvatar from "@/components/UserAvatar";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Genel bakış ve istatistikler" },
+  "/settings": { title: "Hesap ayarları", subtitle: "Profil, güvenlik ve şifre yönetimi" },
   "/categories": { title: "Kategori Listesi", subtitle: "Tüm kategorileri görüntüle ve yönet" },
   "/categories/create": { title: "Yeni Kategori", subtitle: "Yeni bir kategori oluştur" },
   "/products": { title: "Ürün Listesi", subtitle: "Tüm ürünleri görüntüle ve yönet" },
@@ -43,9 +45,13 @@ export default function Header() {
           <Bell size={18} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
         </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer">
+        <Link
+          href="/settings"
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
+          aria-label="Hesap ayarları"
+        >
           <Settings size={18} />
-        </button>
+        </Link>
 
         <div className="pl-3 ml-1 border-l border-slate-200">
           <UserAvatar profile={profile} loading={loading} size={36} className="text-sm cursor-pointer" />

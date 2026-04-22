@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { resetPassword, validateResetToken } from "@/lib/api/authApi";
 import { ApiRequestError } from "@/lib/api/client";
+import { isPasswordCompliant, PASSWORD_POLICY_MESSAGE } from "@/lib/passwordPolicy";
 
 type PageState = "checking" | "valid" | "expired" | "invalid" | "success";
 
@@ -50,8 +51,8 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError("");
 
-    if (newPassword.length < 6) {
-      setError("Şifre en az 6 karakter olmalıdır.");
+    if (!isPasswordCompliant(newPassword)) {
+      setError(PASSWORD_POLICY_MESSAGE);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -295,6 +296,7 @@ function ResetPasswordForm() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{PASSWORD_POLICY_MESSAGE}</p>
                 </div>
 
                 <div>

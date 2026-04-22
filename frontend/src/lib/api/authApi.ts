@@ -1,11 +1,16 @@
 import {
   GoogleAuthProvider,
+  EmailAuthProvider,
+  linkWithCredential,
+  reauthenticateWithCredential,
+  updatePassword,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
   updateProfile,
 } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 import { auth as firebaseAuth } from "@/lib/firebase";
 import { apiRequest } from "./client";
 import type { AuthResponseDto, UserProfileDto } from "./types";
@@ -28,14 +33,16 @@ function parseUserProfile(data: unknown): UserProfileDto {
 
 function parseAuthResponse(data: unknown): AuthResponseDto {
   const o = data as Record<string, unknown>;
-  const accessToken = String(o.accessToken ?? o.AccessToken ?? "");
+  const accessTokenRaw = o.accessToken ?? o.AccessToken;
+  const accessToken =
+    typeof accessTokenRaw === "string" && accessTokenRaw.length > 0 ? accessTokenRaw : undefined;
   const expiresAtUtc = String(o.expiresAtUtc ?? o.ExpiresAtUtc ?? "");
   const userRaw = o.user ?? o.User;
-  if (!accessToken || userRaw == null || typeof userRaw !== "object") {
+  if (userRaw == null || typeof userRaw !== "object") {
     throw new Error("Geçersiz oturum yanıtı.");
   }
   return {
-    accessToken,
+    ...(accessToken != null && { accessToken }),
     expiresAtUtc,
     user: parseUserProfile(userRaw),
   };
@@ -134,6 +141,84 @@ export async function loginWithFirebase(email: string, password: string): Promis
   return exchangeFirebaseIdTokenForJwt(idToken);
 }
 
+/** Oturumdaki Firebase kullanıcısının bağlı sağlayıcı kimlikleri (örn. google.com, password). */
+export function getFirebaseLinkedProviderIds(): string[] {
+  const u = firebaseAuth.currentUser;
+  if (!u) return [];
+  return u.providerData.map((p) => p.providerId);
+}
+
+export function firebaseUserHasEmailPasswordProvider(): boolean {
+  return getFirebaseLinkedProviderIds().includes("password");
+}
+
+export function firebaseUserHasGoogleProvider(): boolean {
+  return getFirebaseLinkedProviderIds().includes("google.com");
+}
+
+/**
+ * Google vb. ile açılmış Firebase hesabına e-posta/şifre sağlayıcısı bağlar.
+ * Aynı oturumda çağrılmalıdır (currentUser + e-posta gerekli).
+ */
+export async function linkEmailPasswordToCurrentUser(password: string): Promise<void> {
+  const user = firebaseAuth.currentUser;
+  if (!user?.email) {
+    throw new Error("Firebase oturumu veya e-posta bulunamadı. Çıkış yapıp tekrar giriş deneyin.");
+  }
+  const credential = EmailAuthProvider.credential(user.email, password);
+  await linkWithCredential(user, credential);
+}
+
+/** Firebase'e şifre bağlandıktan sonra yerel DB'deki özet şifreyi günceller (JWT gerekli). */
+export async function syncLocalPasswordAfterLink(password: string): Promise<void> {
+  await apiRequest("/api/auth/sync-local-password", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+/**
+ * Firebase'e e-posta/şifre bağlar (veya zaten bağlıysa şifreyi e-posta ile doğrular),
+ * ardından yerel DB özet şifresini günceller.
+ */
+export async function linkEmailPasswordAndSyncBackend(password: string): Promise<void> {
+  const user = firebaseAuth.currentUser;
+  if (!user?.email) {
+    throw new Error("Firebase oturumu veya e-posta bulunamadı. Çıkış yapıp tekrar giriş deneyin.");
+  }
+  const credential = EmailAuthProvider.credential(user.email, password);
+  try {
+    await linkWithCredential(user, credential);
+  } catch (err) {
+    const alreadyLinked =
+      err instanceof FirebaseError && err.code === "auth/provider-already-linked";
+    if (alreadyLinked) {
+      await signInWithEmailAndPassword(firebaseAuth, user.email, password);
+    } else {
+      throw err;
+    }
+  }
+  await syncLocalPasswordAfterLink(password);
+}
+
+/**
+ * Mevcut e-posta şifresiyle yeniden doğrulama yapar, Firebase şifresini günceller,
+ * ardından yerel DB bcrypt özetini eşitler.
+ */
+export async function changeFirebasePasswordAndSyncBackend(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = firebaseAuth.currentUser;
+  if (!user?.email) {
+    throw new Error("Firebase oturumu veya e-posta bulunamadı. Çıkış yapıp tekrar giriş deneyin.");
+  }
+  const cred = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, cred);
+  await updatePassword(user, newPassword);
+  await syncLocalPasswordAfterLink(newPassword);
+}
+
 /** Firebase üzerinden Google popup ile giriş yapar ve backend JWT'sini döner. */
 export async function loginWithGoogle(): Promise<AuthResponseDto> {
   const provider = new GoogleAuthProvider();
@@ -174,4 +259,9 @@ export async function resendVerificationEmail(email: string): Promise<void> {
 /** Oturum açmış kullanıcının KVKK onayını backend'e kaydeder. */
 export async function acceptKvkkConsent(): Promise<void> {
   await apiRequest("/api/auth/accept-consent", { method: "POST" });
+}
+
+/** Sunucudaki access_token (HttpOnly) cookie'sini siler. */
+export async function logoutSession(): Promise<void> {
+  await apiRequest<undefined>("/api/auth/logout", { method: "POST", parseJson: false });
 }

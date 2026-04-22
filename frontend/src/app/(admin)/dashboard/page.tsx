@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { fetchCategories } from "@/lib/api/categoriesApi";
 import { searchProducts } from "@/lib/api/productsApi";
-import { fetchCurrentUser } from "@/lib/api/authApi";
-import type { CategoryDto, ProductDto, UserProfileDto } from "@/lib/api/types";
+import type { CategoryDto, ProductDto } from "@/lib/api/types";
 import { ApiRequestError } from "@/lib/api/client";
+import { useCurrentUser } from "@/lib/currentUser";
 import { dashboardStats, recentOrders } from "@/lib/mockData";
 import { getProductStatusInfo } from "@/lib/productStatus";
 import { resolveImageUrl } from "@/lib/imageUrl";
@@ -62,11 +62,11 @@ function greeting(): string {
 /* ---------------------------------------------------------------- */
 
 export default function DashboardPage() {
+  const { profile, loading: profileLoading } = useCurrentUser();
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [topProducts, setTopProducts] = useState<ProductDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<UserProfileDto | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,15 +74,13 @@ export default function DashboardPage() {
       setLoading(true);
       setLoadError(null);
       try {
-        const [cats, topResp, me] = await Promise.all([
+        const [cats, topResp] = await Promise.all([
           fetchCategories(),
           searchProducts({ sortBy: "stock", page: 1, pageSize: 5 }),
-          fetchCurrentUser().catch(() => null),
         ]);
         if (cancelled) return;
         setCategories(cats);
         setTopProducts(topResp.items);
-        setProfile(me);
       } catch (err) {
         if (cancelled) return;
         setLoadError(
@@ -105,10 +103,11 @@ export default function DashboardPage() {
   );
 
   const nameForHero = useMemo(() => {
+    if (profileLoading && !profile) return greeting();
     if (!profile) return "Hoş geldin";
     const n = profile.name?.trim();
     return n ? `${greeting()}, ${n}` : greeting();
-  }, [profile]);
+  }, [profile, profileLoading]);
 
   return (
     <div className="space-y-6">

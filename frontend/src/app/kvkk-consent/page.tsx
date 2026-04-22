@@ -11,8 +11,9 @@ import {
   Lock,
   ArrowRight,
 } from "lucide-react";
-import { acceptKvkkConsent, firebaseSignOut } from "@/lib/api/authApi";
-import { setStoredAccessToken } from "@/lib/api/client";
+import { acceptKvkkConsent, firebaseSignOut, logoutSession } from "@/lib/api/authApi";
+import { getStoredUserProfile, setStoredUserProfile } from "@/lib/api/client";
+import type { UserProfileDto } from "@/lib/api/types";
 
 const sections = [
   {
@@ -135,6 +136,8 @@ export default function KvkkConsentPage() {
     setLoading(true);
     try {
       await acceptKvkkConsent();
+      const prev = getStoredUserProfile() as UserProfileDto | null;
+      if (prev) setStoredUserProfile({ ...prev, kvkkAccepted: true });
       router.replace("/dashboard");
     } catch {
       // Hata oluşursa yeniden dene
@@ -143,8 +146,17 @@ export default function KvkkConsentPage() {
   };
 
   const handleDecline = async () => {
-    try { await firebaseSignOut(); } catch { /* */ }
-    setStoredAccessToken(null);
+    try {
+      await logoutSession();
+    } catch {
+      /* */
+    }
+    setStoredUserProfile(null);
+    try {
+      await firebaseSignOut();
+    } catch {
+      /* */
+    }
     router.replace("/login");
   };
 

@@ -1,4 +1,4 @@
-import { apiRequest, getApiBaseUrl, getStoredAccessToken } from "./client";
+import { apiRequest, getApiBaseUrl, performSessionInvalidationFromUnauthorized } from "./client";
 import type {
   CreateProductPayload,
   PagedResult,
@@ -64,21 +64,18 @@ export async function deleteProduct(id: number): Promise<void> {
 }
 
 /**
- * Ürün görselini sunucuya yükler. `multipart/form-data` ile gönderilir.
- * Sunucu yüklenen dosyayı `wwwroot/uploads/products/` altına kaydeder
- * ve göreli URL'i döner (ör. `/uploads/products/abc123.jpg`).
+ * Ürün görselini API üzerinden yükler; backend Cloudflare R2'ye yazar ve genel HTTPS URL döner.
  */
 export async function uploadProductImage(
   file: File,
   onProgress?: (pct: number) => void,
 ): Promise<string> {
   const url = `${getApiBaseUrl()}/api/products/upload-image`;
-  const token = getStoredAccessToken();
 
   return new Promise<string>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url);
-    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.withCredentials = true;
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
@@ -93,6 +90,9 @@ export async function uploadProductImage(
           reject(new Error("Sunucu yanıtı geçersiz."));
         }
       } else {
+        if (xhr.status === 401) {
+          performSessionInvalidationFromUnauthorized();
+        }
         let msg = `HTTP ${xhr.status}`;
         try {
           const err = JSON.parse(xhr.responseText) as { message?: string };

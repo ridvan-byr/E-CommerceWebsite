@@ -1,18 +1,41 @@
-const TOKEN_KEY = "ecommerce_access_token";
+/** Eski sürümde düz metin token localStorage'daydı; HttpOnly cookie sonrası bir kez silinir. */
+const LEGACY_TOKEN_KEY = "ecommerce_access_token";
+
+export const USER_PROFILE_STORAGE_KEY = "ecommerce_user_profile";
+/** Uygulama içi setStoredUserProfile sonrası CurrentUser state senkronu */
+export const USER_PROFILE_CHANGED_EVENT = "ecommerce-user-profile-changed";
+
+let legacyTokenCleared = false;
+
+function clearLegacyTokenOnce(): void {
+  if (typeof window === "undefined" || legacyTokenCleared) return;
+  legacyTokenCleared = true;
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function setStoredUserProfile(profile: unknown): void {
+  if (typeof window === "undefined") return;
+  if (profile) localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  else localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+  try {
+    window.dispatchEvent(new Event(USER_PROFILE_CHANGED_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getStoredUserProfile(): unknown | null {
+  if (typeof window === "undefined") return null;
+  const profile = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+  return profile ? JSON.parse(profile) : null;
+}
 
 export function getApiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:5288";
-}
-
-export function getStoredAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setStoredAccessToken(token: string | null): void {
-  if (typeof window === "undefined") return;
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
 }
 
 export type ApiErrorBody = { message?: string; errors?: Record<string, string[]> };
@@ -52,20 +75,59 @@ export class ApiRequestError extends Error {
   }
 }
 
+let sessionInvalidationInProgress = false;
+
+/** 401, yanlış giriş denemesinde olsa oturum sonu gibi yorumlanmamalı. */
+function isUnauthenticatedLoginAttempt(path: string, method: string): boolean {
+  const p = (path.split("?")[0] || "").split("#")[0] || "/";
+  const m = method.toUpperCase();
+  if (m !== "POST") return false;
+  return p === "/api/auth/login" || p === "/api/auth/firebase-login";
+}
+
+/**
+ * Cookie (access token) yok/ geçersiz (401) — profili sil, sunucu + Firebase oturumunu kapat, girişe yönlendir.
+ * `apiRequest` dışında (ör. XHR) 401 alındığında da çağrılabilir.
+ */
+export function performSessionInvalidationFromUnauthorized(): void {
+  if (typeof window === "undefined" || sessionInvalidationInProgress) return;
+  sessionInvalidationInProgress = true;
+  try {
+    setStoredUserProfile(null);
+  } catch {
+    /* ignore */
+  }
+  const base = getApiBaseUrl();
+  void fetch(`${base}/api/auth/logout`, { method: "POST", credentials: "include" });
+  void import("firebase/auth")
+    .then(({ signOut }) => import("@/lib/firebase").then(({ auth }) => signOut(auth)))
+    .catch(() => {
+      /* ignore */
+    });
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
+  } else {
+    sessionInvalidationInProgress = false;
+  }
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit & { parseJson?: boolean } = {}
 ): Promise<T> {
   const { parseJson = true, ...init } = options;
+  clearLegacyTokenOnce();
   const url = `${getApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body && typeof init.body === "string") {
     headers.set("Content-Type", "application/json");
   }
-  const token = getStoredAccessToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(url, { ...init, headers });
+  const res = await fetch(url, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
 
   if (res.status === 204 || res.status === 205) {
     return undefined as T;
@@ -73,6 +135,12 @@ export async function apiRequest<T>(
 
   const text = await res.text();
   if (!res.ok) {
+    if (res.status === 401) {
+      const m = (init.method ?? "GET").toUpperCase();
+      if (!isUnauthenticatedLoginAttempt(path, m)) {
+        performSessionInvalidationFromUnauthorized();
+      }
+    }
     let parsed: unknown;
     try {
       parsed = text ? JSON.parse(text) : undefined;

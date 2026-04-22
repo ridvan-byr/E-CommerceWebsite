@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { setStoredAccessToken } from "@/lib/api/client";
-import { firebaseSignOut } from "@/lib/api/authApi";
+import { firebaseSignOut, logoutSession } from "@/lib/api/authApi";
+import { setStoredUserProfile } from "@/lib/api/client";
 import { useCurrentUser, displayName } from "@/lib/currentUser";
 import UserAvatar from "@/components/UserAvatar";
 import {
@@ -28,9 +28,7 @@ interface SidebarProps {
 const navGroups = [
   {
     label: "Genel",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ],
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
     label: "Kategoriler",
@@ -56,11 +54,16 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const handleLogout = async () => {
     try {
+      await logoutSession();
+    } catch {
+      // Sunucu cookie'si zaten yoksa sorun değil.
+    }
+    setStoredUserProfile(null);
+    try {
       await firebaseSignOut();
     } catch {
       // Firebase oturumu zaten yoksa sorun değil.
     }
-    setStoredAccessToken(null);
     router.push("/login");
   };
 

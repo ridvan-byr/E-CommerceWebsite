@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
 import { CurrentUserProvider } from "@/lib/currentUser";
+import SessionGuard from "@/components/SessionGuard";
 import KvkkGuard from "@/components/KvkkGuard";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <CurrentUserProvider>
+      <SessionGuard>
       <KvkkGuard>
         <div className="min-h-screen bg-slate-100 flex">
           <Sidebar collapsed={collapsed} onToggle={handleToggle} />
@@ -38,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
       </KvkkGuard>
+      </SessionGuard>
     </CurrentUserProvider>
   );
 }
