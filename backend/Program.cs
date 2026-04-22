@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using backend.Data;
+using backend.Auth;
 using backend.Middleware;
 using backend.Options;
 using backend.Services;
@@ -32,6 +33,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
 builder.Services.Configure<AppUrlOptions>(builder.Configuration.GetSection(AppUrlOptions.SectionName));
 builder.Services.Configure<FirebaseOptions>(builder.Configuration.GetSection(FirebaseOptions.SectionName));
+builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options.SectionName));
 
 // Firebase Admin SDK — ID token doğrulaması için yalnızca bir kez başlatılır.
 if (FirebaseApp.DefaultInstance is null)
@@ -48,7 +50,7 @@ if (FirebaseApp.DefaultInstance is null)
     }
     FirebaseApp.Create(new AppOptions
     {
-        Credential = GoogleCredential.FromFile(saPath),
+        Credential = CredentialFactory.FromFile(saPath, JsonCredentialParameters.ServiceAccountCredentialType),
     });
 }
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
@@ -67,6 +69,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1),
         };
+        // Bearer header yoksa JWT'yi HttpOnly access_token cookie'sinden alır.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrEmpty(context.Token) &&
+                    context.Request.Cookies.TryGetValue(AuthCookieExtensions.AccessTokenName, out var fromCookie) &&
+                    !string.IsNullOrEmpty(fromCookie))
+                {
+                    context.Token = fromCookie;
+                }
+
+                return Task.CompletedTask;
+            },
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -82,11 +99,13 @@ builder.Services.AddScoped<IProductFeatureRepository, ProductFeatureRepository>(
 builder.Services.AddScoped<IProductFeatureService, ProductFeatureService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IFirebaseAuthService, FirebaseAuthService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
-builder.Services.AddSingleton<IImageStorageService, FirebaseImageStorageService>();
+// Şablon + SMTP önce (VerificationEmailDispatchService bunlara bağlı)
 builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+RegisterServices.AddJwtAndVerificationEmailServices(builder.Services);
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+RegisterServices.AddProductImageStorage(builder);
 
 // Rate limiting — özellikle auth uçları için brute-force koruması
 builder.Services.AddRateLimiter(options =>
@@ -126,9 +145,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy
+            .WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 

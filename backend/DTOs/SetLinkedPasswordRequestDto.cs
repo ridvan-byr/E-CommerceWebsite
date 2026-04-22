@@ -3,20 +3,12 @@ using backend.Validation;
 
 namespace backend.DTOs;
 
-public class RegisterRequestDto
+/// <summary>
+/// OAuth (ör. Google) ile açılmış hesaba istemci tarafında Firebase e-posta/şifre bağlandıktan sonra
+/// yerel DB'deki placeholder hash'in güncellenmesi için kullanılır.
+/// </summary>
+public class SetLinkedPasswordRequestDto
 {
-    [Required]
-    [StringLength(100)]
-    public string Name { get; set; } = string.Empty;
-
-    [Required]
-    [StringLength(100)]
-    public string Surname { get; set; } = string.Empty;
-
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
-
     [Required]
     [StringLength(128, MinimumLength = 8)]
     [RegularExpression(PasswordPolicy.StrongPasswordPattern, ErrorMessage = PasswordPolicy.StrongPasswordErrorMessage)]

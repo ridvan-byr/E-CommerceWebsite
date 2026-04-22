@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using backend.Auth;
 using backend.DTOs;
+using backend.Options;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace backend.Controllers;
 
@@ -12,11 +15,19 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IPasswordResetService _passwordResetService;
+    private readonly IWebHostEnvironment _env;
+    private readonly JwtOptions _jwt;
 
-    public AuthController(IAuthService authService, IPasswordResetService passwordResetService)
+    public AuthController(
+        IAuthService authService,
+        IPasswordResetService passwordResetService,
+        IWebHostEnvironment env,
+        IOptions<JwtOptions> jwtOptions)
     {
         _authService = authService;
         _passwordResetService = passwordResetService;
+        _env = env;
+        _jwt = jwtOptions.Value;
     }
 
     /// <summary>
@@ -47,7 +58,21 @@ public class AuthController : ControllerBase
         if (result is null)
             return Unauthorized(new { message = "E-posta veya şifre hatalı veya hesap pasif." });
 
-        return Ok(result);
+        Response.AppendAccessTokenCookie(result.AccessToken, _jwt, _env);
+        return Ok(new SessionResponseDto
+        {
+            User = result.User,
+            ExpiresAtUtc = result.ExpiresAtUtc,
+        });
+    }
+
+    /// <summary>HttpOnly access_token cookie'sini siler; istemci çıkışında çağrılır.</summary>
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public IActionResult Logout()
+    {
+        Response.DeleteAccessTokenCookie();
+        return Ok();
     }
 
     /// <summary>
@@ -77,7 +102,13 @@ public class AuthController : ControllerBase
         if (result.Response is null)
             return Unauthorized(new { message = "Firebase kimlik doğrulaması başarısız." });
 
-        return Ok(result.Response);
+        var session = result.Response;
+        Response.AppendAccessTokenCookie(session.AccessToken, _jwt, _env);
+        return Ok(new SessionResponseDto
+        {
+            User = session.User,
+            ExpiresAtUtc = session.ExpiresAtUtc,
+        });
     }
 
     [HttpPost("forgot-password")]
@@ -184,5 +215,29 @@ public class AuthController : ControllerBase
             return NotFound();
 
         return Ok(profile);
+    }
+
+    /// <summary>
+    /// İstemci Firebase şifresini güncelledikten veya OAuth hesabına e-posta/şifre bağladıktan sonra
+    /// yerel DB'deki bcrypt özetini aynı düz şifreyle eşitler.
+    /// </summary>
+    [Authorize]
+    [HttpPost("sync-local-password")]
+    public async Task<IActionResult> SyncLocalPassword(
+        [FromBody] SetLinkedPasswordRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(idStr) || !int.TryParse(idStr, out var userId))
+            return Unauthorized();
+
+        var ok = await _authService.SyncLocalPasswordAfterFirebaseLinkAsync(userId, dto.Password, cancellationToken);
+        if (!ok)
+            return BadRequest(new { message = "Şifre kaydedilemedi. Oturum geçersiz veya hesap pasif." });
+
+        return Ok(new { message = "Sunucu şifre özeti güncellendi." });
     }
 }

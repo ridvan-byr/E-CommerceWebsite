@@ -48,4 +48,10 @@ public interface IAuthService
     /// Kullanıcının KVKK Aydınlatma Metni'ni okuduğunu ve onayladığını kaydeder.
     /// </summary>
     Task<bool> AcceptKvkkAsync(int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Oturum açmış kullanıcı için yerel <c>PasswordHash</c> alanını verilen düz şifrenin
+    /// bcrypt özetiyle günceller (OAuth placeholder veya mevcut hash fark etmez; istemci Firebase ile uyumlu tutar).
+    /// </summary>
+    Task<bool> SyncLocalPasswordAfterFirebaseLinkAsync(int userId, string password, CancellationToken cancellationToken = default);
 }

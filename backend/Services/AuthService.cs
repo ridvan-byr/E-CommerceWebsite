@@ -1,13 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using backend.DTOs;
 using backend.Models;
-using backend.Options;
 using backend.Repositories;
 using FirebaseAdmin.Auth;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Services;
 
@@ -15,27 +9,21 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IFirebaseAuthService _firebaseAuth;
-    private readonly JwtOptions _jwt;
-    private readonly AppUrlOptions _appUrl;
-    private readonly IEmailSender _emailSender;
-    private readonly IEmailTemplateService _emailTemplateService;
+    private readonly IJwtAccessTokenFactory _jwtAccessTokenFactory;
+    private readonly IVerificationEmailDispatchService _verificationEmailDispatch;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUserRepository userRepository,
         IFirebaseAuthService firebaseAuth,
-        IOptions<JwtOptions> jwtOptions,
-        IOptions<AppUrlOptions> appUrlOptions,
-        IEmailSender emailSender,
-        IEmailTemplateService emailTemplateService,
+        IJwtAccessTokenFactory jwtAccessTokenFactory,
+        IVerificationEmailDispatchService verificationEmailDispatch,
         ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _firebaseAuth = firebaseAuth;
-        _jwt = jwtOptions.Value;
-        _appUrl = appUrlOptions.Value;
-        _emailSender = emailSender;
-        _emailTemplateService = emailTemplateService;
+        _jwtAccessTokenFactory = jwtAccessTokenFactory;
+        _verificationEmailDispatch = verificationEmailDispatch;
         _logger = logger;
     }
 
@@ -91,7 +79,7 @@ public class AuthService : IAuthService
 
         _logger.LogInformation("Yeni kullanıcı kaydedildi (doğrulama bekleniyor): {Email} (rol: {Role})", email, role);
 
-        await SendVerificationEmailInternalAsync(user, cancellationToken);
+        await _verificationEmailDispatch.SendAsync(user, cancellationToken);
 
         return new RegisterResultDto { Email = email };
     }
@@ -232,12 +220,11 @@ public class AuthService : IAuthService
 
     private AuthResponseDto BuildAuthResponse(User user)
     {
-        var expires = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenMinutes);
-        var token = CreateJwtToken(user, expires);
+        var jwt = _jwtAccessTokenFactory.CreateForUser(user);
         return new AuthResponseDto
         {
-            AccessToken = token,
-            ExpiresAtUtc = expires,
+            AccessToken = jwt.AccessToken,
+            ExpiresAtUtc = jwt.ExpiresAtUtc,
             User = MapProfile(user),
         };
     }
@@ -253,41 +240,6 @@ public class AuthService : IAuthService
             PhotoUrl = user.PhotoUrl,
             KvkkAccepted = user.KvkkAcceptedAt.HasValue,
         };
-
-    private string CreateJwtToken(User user, DateTime expiresUtc)
-    {
-        var keyBytes = Encoding.UTF8.GetBytes(_jwt.Secret);
-        if (keyBytes.Length < 32)
-            throw new InvalidOperationException("Jwt:Secret en az 32 karakter olmalıdır (HS256).");
-
-        var nameClaim = $"{user.Name} {user.Surname}".Trim();
-        if (nameClaim.Length == 0)
-            nameClaim = "Kullanıcı";
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new Claim(ClaimTypes.Name, nameClaim),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        };
-
-        var creds = new SigningCredentials(
-            new SymmetricSecurityKey(keyBytes),
-            SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: _jwt.Issuer,
-            audience: _jwt.Audience,
-            claims: claims,
-            expires: expiresUtc,
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-
 
     public async Task<VerifyEmailStatus> VerifyEmailAsync(string token, CancellationToken cancellationToken = default)
     {
@@ -332,28 +284,7 @@ public class AuthService : IAuthService
         user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        await SendVerificationEmailInternalAsync(user, cancellationToken);
-    }
-
-    private async Task SendVerificationEmailInternalAsync(User user, CancellationToken cancellationToken)
-    {
-        var baseUrl = (_appUrl.FrontendBaseUrl ?? string.Empty).TrimEnd('/');
-        var verifyUrl = $"{baseUrl}/verify-email?token={Uri.EscapeDataString(user.EmailVerificationToken!)}";
-        var fullName = $"{user.Name} {user.Surname}".Trim();
-        if (fullName.Length == 0) fullName = "Kullanıcı";
-
-        var (subject, html, text) = _emailTemplateService.BuildVerificationEmailMessage(fullName, verifyUrl);
-
-        try
-        {
-            await _emailSender.SendAsync(user.Email, fullName, subject, html, text, cancellationToken);
-            _logger.LogInformation("Doğrulama e-postası gönderildi: {Email}", user.Email);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Doğrulama e-postası gönderilemedi: {Email}", user.Email);
-            throw;
-        }
+        await _verificationEmailDispatch.SendAsync(user, cancellationToken);
     }
 
     public async Task<bool> AcceptKvkkAsync(int userId, CancellationToken cancellationToken = default)
@@ -366,6 +297,19 @@ public class AuthService : IAuthService
         await _userRepository.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("KVKK onayı kaydedildi: {Email} ({UserId})", user.Email, userId);
+        return true;
+    }
+
+    public async Task<bool> SyncLocalPasswordAfterFirebaseLinkAsync(int userId, string password, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdTrackingAsync(userId, cancellationToken);
+        if (user is null || !user.IsActive)
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Yerel şifre özeti güncellendi: {Email} ({UserId})", user.Email, userId);
         return true;
     }
 

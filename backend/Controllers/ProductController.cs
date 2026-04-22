@@ -13,12 +13,10 @@ public class ProductController : ControllerBase
 {
 
     private readonly IProductService _productService;
-    private readonly IImageStorageService _imageStorage;
 
-    public ProductController(IProductService productService, IImageStorageService imageStorage)
+    public ProductController(IProductService productService)
     {
         _productService = productService;
-        _imageStorage = imageStorage;
     }
 
     /// <summary>
@@ -30,6 +28,7 @@ public class ProductController : ControllerBase
     [RequestSizeLimit(6 * 1024 * 1024)]
     public async Task<IActionResult> UploadImage(
         IFormFile file,
+        [FromServices] IImageStorageService imageStorage,
         CancellationToken cancellationToken = default)
     {
         if (file is null || file.Length == 0)
@@ -37,7 +36,7 @@ public class ProductController : ControllerBase
 
         try
         {
-            var url = await _imageStorage.SaveProductImageAsync(file, cancellationToken);
+            var url = await imageStorage.SaveProductImageAsync(file, cancellationToken);
             return Ok(new { url });
         }
         catch (ArgumentException ex)

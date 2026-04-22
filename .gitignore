@@ -6,7 +6,9 @@
 *.userosscache
 *.sln.docstates
 .vs/
-
+backend/Secrets/
+# Local build output (never commit DLLs, PDBs, or copied secrets)
+backend/out-build/
 # Logs / env (keep secrets out of git)
 *.log
 .env
