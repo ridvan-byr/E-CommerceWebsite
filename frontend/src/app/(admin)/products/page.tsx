@@ -96,6 +96,28 @@ export default function ProductsPage() {
     setLoading(true);
     setLoadError(null);
     try {
+      // REVIEW [D5] Sabit `pageSize: 200` + sayfa numarası `1`. Backend zaten
+      // pagination destekliyor (ProductController.SearchProduct'a bak), ama
+      // frontend "ilk 200 ürün yeter" diyor. Mağazada 1000 ürün olunca:
+      //
+      //   • İlk 200'den sonrası listede görünmüyor (görünmez bug, kullanıcı
+      //     "ürünüm kaybolmuş" der)
+      //   • 200 ürün cevabı tarayıcıya yüklenmesi yavaşlar
+      //   • Mobilde scroll yavaşlar
+      //
+      // Yapılması gereken:
+      //   1. Sayfa boyutu makul tut (50 yeter; UI'da 25/50/100 seçici eklenebilir)
+      //   2. Tablo altına pagination kontrolü koy (önceki/sonraki, sayfa no)
+      //   3. `page` ve `pageSize`'ı state'e bağla
+      //
+      // Backend totalCount zaten dönüyor (PagedResult<ProductDto>), kaç sayfa
+      // olduğunu hesaplamak: Math.ceil(totalCount / pageSize).
+      //
+      // Şu an bug üretmiyor çünkü ürün sayısı az; ama "veri arttıkça patlayan"
+      // problemler en sinsileridir. Pagination'ı baştan koymak ileride
+      // ürün sayısı arttığında acil düzeltme yapmak zorunda kalmayı engeller.
+      //
+      // Anahtar kelime: "react pagination", "server-side pagination pattern".
       const [catRes, prodRes] = await Promise.all([
         fetchCategories(),
         searchProducts({

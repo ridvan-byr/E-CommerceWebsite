@@ -86,6 +86,30 @@ export default function ProductCreatePage() {
     setFeatures((prev) => prev.filter((f) => f.localId !== localId));
   };
 
+  // REVIEW [D4] Bu validate() fonksiyonu büyük olasılıkla products/[id]/page.tsx
+  // (edit sayfası) içinde de neredeyse aynı şekilde tekrar ediyor. Bir kuralı
+  // değiştirmek istediğinde iki sayfayı da güncellemek zorunda kalırsın, biri
+  // unutulur, formlar farklı davranmaya başlar.
+  //
+  // Doğru yer: ortak bir validator. Örneğin lib/validators/productValidator.ts:
+  //
+  //     // lib/validators/productValidator.ts
+  //     export type ProductFormErrors = Record<string, string>;
+  //     export function validateProductForm(form: ProductFormShape): ProductFormErrors {
+  //       const e: ProductFormErrors = {};
+  //       if (!form.name.trim()) e.name = "Ürün adı zorunludur.";
+  //       // ... (diğer kurallar)
+  //       return e;
+  //     }
+  //
+  // Create ve Edit sayfaları aynı fonksiyonu çağırır. Frontend validation
+  // her zaman backend ile aynı kuralları doğrulamalı (CreateProductDto
+  // ne diyorsa); bu kuralları tek dosyada tutmak senkron tutmayı kolaylaştırır.
+  //
+  // Genel sezgi: aynı şeyi iki sayfada gördüysen, üçüncüsünde de göreceksin.
+  // İki yerde tekrarladığın anda ortak bir yere çıkar.
+  //
+  // Anahtar kelime: "DRY in React", "form validation library (zod, yup)".
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Ürün adı zorunludur.";
