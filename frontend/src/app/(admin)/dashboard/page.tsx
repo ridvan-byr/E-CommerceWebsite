@@ -41,12 +41,14 @@ const orderStatusStyles: Record<string, string> = {
   processing: "bg-blue-50 text-blue-700 ring-blue-200/50",
   shipped: "bg-indigo-50 text-indigo-700 ring-indigo-200/50",
   pending: "bg-amber-50 text-amber-700 ring-amber-200/50",
+  cancelled: "bg-slate-100 text-slate-600 ring-slate-200/60",
 };
 const orderStatusLabels: Record<string, string> = {
   completed: "Tamamlandı",
   processing: "İşleniyor",
   shipped: "Kargoda",
   pending: "Bekliyor",
+  cancelled: "İptal",
 };
 
 function greeting(): string {
@@ -138,7 +140,7 @@ export default function DashboardPage() {
               <Sparkles size={12} />
               Admin Console
             </span>
-            <h1 className="mt-4 font-display text-3xl lg:text-[34px] font-bold tracking-tight">
+            <h1 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-[34px]">
               {nameForHero}
             </h1>
             <p className="mt-2 max-w-lg text-[14px] text-slate-300">
@@ -187,8 +189,8 @@ export default function DashboardPage() {
         {/* Recent Orders (mock) */}
         <FadeUp delay={80} className="xl:col-span-2">
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm h-full">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
+            <div className="flex flex-wrap items-center gap-3">
               <div>
                 <h2 className="font-display font-semibold text-slate-900">
                   Son Siparişler
@@ -201,6 +203,12 @@ export default function DashboardPage() {
                 mock
               </span>
             </div>
+            <Link
+              href="/orders"
+              className="flex items-center gap-1 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+            >
+              Tüm siparişler <ArrowRight size={14} />
+            </Link>
           </div>
           <div className="divide-y divide-slate-50">
             {recentOrders.map((order) => (

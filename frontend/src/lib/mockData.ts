@@ -350,6 +350,214 @@ export const products: Product[] = [
   },
 ];
 
+/** Sipariş listesi ve dashboard “Son siparişler” widget’ı için ortak mock durumu */
+export type MockOrderStatus =
+  | "pending"
+  | "processing"
+  | "shipped"
+  | "completed"
+  | "cancelled";
+
+export interface CustomerOrder {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  phone: string;
+  summary: string;
+  /** Örnek arama: SKU veya barkod parçası */
+  searchSku?: string;
+  amount: number;
+  status: MockOrderStatus;
+  createdAt: string;
+  paymentMethod: "card" | "transfer" | "cash_on_delivery";
+  city: string;
+}
+
+export const customerOrders: CustomerOrder[] = [
+  {
+    id: "#GA-2026-01492",
+    customerName: "Ahmet Yılmaz",
+    customerEmail: "ahmet.yilmaz@gmail.com",
+    phone: "0532 111 22 33",
+    summary: "iPhone 15 Pro Max · APL-IP15PM-256 (+1 ürün)",
+    searchSku: "APL-IP15PM-256",
+    amount: 58998,
+    status: "completed",
+    createdAt: "2026-04-28T14:22:00.000Z",
+    paymentMethod: "card",
+    city: "İstanbul",
+  },
+  {
+    id: "#GA-2026-01491",
+    customerName: "Ayşe Kaya",
+    customerEmail: "ayse.kaya@outlook.com.tr",
+    phone: "0542 222 33 44",
+    summary: "MacBook Pro 14 M3 · APL-MBP14-M3",
+    searchSku: "APL-MBP14-M3",
+    amount: 84999,
+    status: "processing",
+    createdAt: "2026-04-28T11:05:00.000Z",
+    paymentMethod: "transfer",
+    city: "Ankara",
+  },
+  {
+    id: "#GA-2026-01488",
+    customerName: "Mehmet Demir",
+    customerEmail: "mehmet.demir@yahoo.com",
+    phone: "0533 444 55 66",
+    summary: "Nike Air Max 270 · NIKE-AM270-42",
+    searchSku: "NIKE-AM270-42",
+    amount: 3299,
+    status: "shipped",
+    createdAt: "2026-04-27T16:40:00.000Z",
+    paymentMethod: "card",
+    city: "İzmir",
+  },
+  {
+    id: "#GA-2026-01485",
+    customerName: "Fatma Şahin",
+    customerEmail: "fatma.sahin@gmail.com",
+    phone: "0544 777 88 99",
+    summary: "Sony WH-1000XM5 · SONY-WH1000XM5",
+    searchSku: "SONY-WH1000XM5",
+    amount: 11999,
+    status: "completed",
+    createdAt: "2026-04-27T09:15:00.000Z",
+    paymentMethod: "card",
+    city: "Bursa",
+  },
+  {
+    id: "#GA-2026-01480",
+    customerName: "Ali Çelik",
+    customerEmail: "ali.celik@hotmail.com",
+    phone: "0555 100 20 30",
+    summary: "Levi's 501 Jeans · LEV-501-32-32",
+    searchSku: "LEV-501-32-32",
+    amount: 1899,
+    status: "pending",
+    createdAt: "2026-04-26T18:02:00.000Z",
+    paymentMethod: "cash_on_delivery",
+    city: "Antalya",
+  },
+  {
+    id: "#GA-2026-01476",
+    customerName: "Zeynep Arslan",
+    customerEmail: "zeynep.arslan@gmail.com",
+    phone: "0536 200 30 40",
+    summary: "Samsung Galaxy S24 Ultra · SAM-GS24U-512 (+2 ürün)",
+    searchSku: "SAM-GS24U-512",
+    amount: 52498,
+    status: "processing",
+    createdAt: "2026-04-26T10:30:00.000Z",
+    paymentMethod: "card",
+    city: "İstanbul",
+  },
+  {
+    id: "#GA-2026-01470",
+    customerName: "Burak Öztürk",
+    customerEmail: "burak.ozturk@firma.com.tr",
+    phone: "0312 555 12 34",
+    summary: "Dyson V15 Detect · DYS-V15-DET",
+    searchSku: "DYS-V15-DET",
+    amount: 22999,
+    status: "cancelled",
+    createdAt: "2026-04-25T14:00:00.000Z",
+    paymentMethod: "transfer",
+    city: "Ankara",
+  },
+  {
+    id: "#GA-2026-01465",
+    customerName: "Elif Yıldız",
+    customerEmail: "elif.yildiz@icloud.com",
+    phone: "0538 333 44 55",
+    summary: "Atomik Alışkanlıklar · KIT-ATOM-ALI",
+    searchSku: "KIT-ATOM-ALI",
+    amount: 189,
+    status: "shipped",
+    createdAt: "2026-04-25T08:45:00.000Z",
+    paymentMethod: "card",
+    city: "Eskişehir",
+  },
+  {
+    id: "#GA-2026-01458",
+    customerName: "Can Korkmaz",
+    customerEmail: "can.korkmaz@gmail.com",
+    phone: "0541 666 77 88",
+    summary: "IKEA KALLAX Kitaplık · IKEA-KAL-4X4",
+    searchSku: "IKEA-KAL-4X4",
+    amount: 2499,
+    status: "completed",
+    createdAt: "2026-04-24T19:20:00.000Z",
+    paymentMethod: "cash_on_delivery",
+    city: "Kocaeli",
+  },
+  {
+    id: "#GA-2026-01452",
+    customerName: "Selin Acar",
+    customerEmail: "selin.acar@company.com.tr",
+    phone: "0539 888 99 00",
+    summary: "Adidas Ultraboost 23 · ADI-UB23-44",
+    searchSku: "ADI-UB23-44",
+    amount: 4599,
+    status: "pending",
+    createdAt: "2026-04-24T12:10:00.000Z",
+    paymentMethod: "card",
+    city: "İstanbul",
+  },
+  {
+    id: "#GA-2026-01441",
+    customerName: "Emre Koç",
+    customerEmail: "emre.koc@gmail.com",
+    phone: "0531 121 21 21",
+    summary: "iPhone 15 Pro Max · APL-IP15PM-256",
+    searchSku: "APL-IP15PM-256",
+    amount: 54999,
+    status: "completed",
+    createdAt: "2026-04-23T15:55:00.000Z",
+    paymentMethod: "card",
+    city: "Adana",
+  },
+  {
+    id: "#GA-2026-01438",
+    customerName: "Deniz Polat",
+    customerEmail: "deniz.polat@live.com",
+    phone: "0546 343 43 43",
+    summary: "MacBook Pro 14 M3 · APL-MBP14-M3 (+1 ürün)",
+    searchSku: "APL-MBP14-M3",
+    amount: 89998,
+    status: "processing",
+    createdAt: "2026-04-23T09:00:00.000Z",
+    paymentMethod: "transfer",
+    city: "Trabzon",
+  },
+  {
+    id: "#GA-2026-01429",
+    customerName: "Merve Tunç",
+    customerEmail: "merve.tunc@gmail.com",
+    phone: "0522 555 66 77",
+    summary: "Nike Air Max 270 · NIKE-AM270-42 · Atomik Alışkanlıklar",
+    searchSku: "NIKE-AM270-42",
+    amount: 3488,
+    status: "shipped",
+    createdAt: "2026-04-22T13:25:00.000Z",
+    paymentMethod: "card",
+    city: "İstanbul",
+  },
+  {
+    id: "#GA-2026-01415",
+    customerName: "Hakan Kurt",
+    customerEmail: "hakan.kurt@kurumsal.tr",
+    phone: "0216 444 55 66",
+    summary: "Sony WH-1000XM5 · SONY-WH1000XM5",
+    searchSku: "SONY-WH1000XM5",
+    amount: 11999,
+    status: "cancelled",
+    createdAt: "2026-04-21T11:11:00.000Z",
+    paymentMethod: "card",
+    city: "İstanbul",
+  },
+];
+
 export const dashboardStats = {
   totalProducts: 703,
   totalCategories: 6,
@@ -361,10 +569,27 @@ export const dashboardStats = {
   categoryGrowth: 0,
 };
 
-export const recentOrders = [
-  { id: "#ORD-001", customer: "Ahmet Yılmaz", product: "iPhone 15 Pro Max", amount: 54999, status: "completed", date: "2024-02-10" },
-  { id: "#ORD-002", customer: "Ayşe Kaya", product: "MacBook Pro 14 M3", amount: 84999, status: "processing", date: "2024-02-10" },
-  { id: "#ORD-003", customer: "Mehmet Demir", product: "Nike Air Max 270", amount: 3299, status: "shipped", date: "2024-02-09" },
-  { id: "#ORD-004", customer: "Fatma Şahin", product: "Sony WH-1000XM5", amount: 11999, status: "completed", date: "2024-02-09" },
-  { id: "#ORD-005", customer: "Ali Çelik", product: "Levi's 501 Jeans", amount: 1899, status: "pending", date: "2024-02-08" },
-];
+function summaryFirstProduct(summary: string): string {
+  const first = summary.split("·")[0]?.trim() ?? summary;
+  return first.replace(/\s*\(\+\d+\s*ürün\)\s*$/i, "").trim();
+}
+
+/** Dashboard “Son Siparişler” kartı — en yeni 5 kayıt */
+export const recentOrders: {
+  id: string;
+  customer: string;
+  product: string;
+  amount: number;
+  status: MockOrderStatus;
+  date: string;
+}[] = [...customerOrders]
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  .slice(0, 5)
+  .map((o) => ({
+    id: o.id,
+    customer: o.customerName,
+    product: summaryFirstProduct(o.summary),
+    amount: o.amount,
+    status: o.status,
+    date: o.createdAt.slice(0, 10),
+  }));

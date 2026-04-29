@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { firebaseSignOut, logoutSession } from "@/lib/api/authApi";
 import { setStoredUserProfile } from "@/lib/api/client";
 import { useCurrentUser, displayName } from "@/lib/currentUser";
@@ -18,17 +19,24 @@ import {
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
+  ClipboardList,
 } from "lucide-react";
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const navGroups = [
   {
     label: "Genel",
     items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Siparişler",
+    items: [{ href: "/orders", label: "Müşteri siparişleri", icon: ClipboardList }],
   },
   {
     label: "Kategoriler",
@@ -47,10 +55,17 @@ const navGroups = [
   },
 ];
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({
+  collapsed,
+  onToggle,
+  mobileOpen = false,
+  onMobileClose,
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, loading: profileLoading } = useCurrentUser();
+  const isMdUp = useMediaQuery("(min-width: 768px)", false);
+  const effectiveCollapsed = collapsed && isMdUp;
 
   const handleLogout = async () => {
     try {
@@ -76,18 +91,24 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   return (
     <aside
-      style={{ width: collapsed ? 72 : 260 }}
-      className="fixed top-0 left-0 h-screen bg-slate-900 flex flex-col z-50 border-r border-slate-800 transition-all duration-300 ease-in-out overflow-hidden"
+      style={{ width: effectiveCollapsed ? 72 : 260 }}
+      className={`fixed top-0 left-0 z-[60] flex h-[100dvh] flex-col overflow-hidden border-r border-slate-800 bg-slate-900 transition-[transform,width] duration-300 ease-in-out max-md:!w-[min(280px,85vw)] ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      } md:translate-x-0`}
     >
       {/* Logo */}
       <div className="relative h-[72px] border-b border-slate-800 flex-shrink-0">
         {/* Expanded */}
         <div
           className={`absolute inset-0 flex items-center justify-between px-3 transition-all duration-200 ${
-            collapsed ? "opacity-0 pointer-events-none" : "opacity-100 delay-100"
+            effectiveCollapsed ? "opacity-0 pointer-events-none" : "opacity-100 delay-100"
           }`}
         >
-          <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 items-center gap-3"
+            onClick={() => onMobileClose?.()}
+          >
             <Image
               src="/i.webp"
               alt="GelAl.com"
@@ -120,7 +141,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Collapsed */}
         <div
           className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
-            collapsed ? "opacity-100 delay-100" : "opacity-0 pointer-events-none"
+            effectiveCollapsed ? "opacity-100 delay-100" : "opacity-0 pointer-events-none"
           }`}
         >
           <button
@@ -139,7 +160,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <div key={group.label}>
             <div
               className={`overflow-hidden transition-all duration-300 ${
-                collapsed ? "h-0 opacity-0 mb-0" : "h-5 opacity-100 mb-2"
+                effectiveCollapsed ? "mb-0 h-0 opacity-0" : "mb-2 h-5 opacity-100"
               }`}
             >
               <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest px-3 whitespace-nowrap">
@@ -155,7 +176,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      title={collapsed ? item.label : undefined}
+                      title={effectiveCollapsed ? item.label : undefined}
+                      onClick={() => onMobileClose?.()}
                       className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
                         active
                           ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
@@ -171,14 +193,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                         }`}
                       />
                       <span
-                        className={`overflow-hidden whitespace-nowrap transition-all duration-300 flex-1 ${
-                          collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                        className={`flex-1 overflow-hidden whitespace-nowrap transition-all duration-300 ${
+                          effectiveCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                         }`}
                       >
                         {item.label}
                       </span>
-                      {active && !collapsed && (
-                        <ChevronRight size={14} className="text-indigo-300 flex-shrink-0" />
+                      {active && !effectiveCollapsed && (
+                        <ChevronRight size={14} className="flex-shrink-0 text-indigo-300" />
                       )}
                     </Link>
                   </li>
@@ -192,8 +214,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Bottom User */}
       <div className="border-t border-slate-800 p-3 flex-shrink-0">
         <div
-          className={`flex items-center gap-3 mb-2 overflow-hidden transition-all duration-300 ${
-            collapsed ? "justify-center" : ""
+          className={`mb-2 flex items-center gap-3 overflow-hidden transition-all duration-300 ${
+            effectiveCollapsed ? "justify-center" : ""
           }`}
         >
           <UserAvatar
@@ -201,11 +223,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             loading={profileLoading}
             size={36}
             className="text-sm shadow-lg"
-            title={collapsed && profile ? displayName(profile) : undefined}
+            title={effectiveCollapsed && profile ? displayName(profile) : undefined}
           />
           <div
-            className={`overflow-hidden transition-all duration-300 min-w-0 ${
-              collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+            className={`min-w-0 overflow-hidden transition-all duration-300 ${
+              effectiveCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
             }`}
           >
             <p className="text-white text-sm font-semibold truncate whitespace-nowrap">
@@ -223,16 +245,19 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         <button
           type="button"
-          onClick={handleLogout}
-          title={collapsed ? "Çıkış Yap" : undefined}
-          className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-red-400 transition-all text-sm font-medium ${
-            collapsed ? "justify-center" : ""
+          onClick={() => {
+            onMobileClose?.();
+            void handleLogout();
+          }}
+          title={effectiveCollapsed ? "Çıkış Yap" : undefined}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-400 transition-all hover:bg-slate-800 hover:text-red-400 ${
+            effectiveCollapsed ? "justify-center" : ""
           }`}
         >
           <LogOut size={15} className="flex-shrink-0" />
           <span
             className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
-              collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+              effectiveCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
             }`}
           >
             Çıkış Yap

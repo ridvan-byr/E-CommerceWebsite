@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, Menu } from "lucide-react";
 import { useCurrentUser } from "@/lib/currentUser";
 import UserAvatar from "@/components/UserAvatar";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Genel bakış ve istatistikler" },
+  "/orders": { title: "Müşteri siparişleri", subtitle: "Sipariş arama ve liste (mock veri)" },
   "/settings": { title: "Hesap ayarları", subtitle: "Profil, güvenlik ve şifre yönetimi" },
   "/categories": { title: "Kategori Listesi", subtitle: "Tüm kategorileri görüntüle ve yönet" },
   "/categories/create": { title: "Yeni Kategori", subtitle: "Yeni bir kategori oluştur" },
@@ -16,7 +17,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/products/search": { title: "Ürün Ara", subtitle: "Gelişmiş arama ve filtreleme" },
 };
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname();
   const { profile, loading } = useCurrentUser();
 
@@ -34,26 +35,37 @@ export default function Header() {
   const { title, subtitle } = getPageInfo();
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
-      <div>
-        <h1 className="text-slate-900 font-semibold text-lg leading-tight">{title}</h1>
-        {subtitle && <p className="text-slate-500 text-xs mt-0.5">{subtitle}</p>}
+    <header className="sticky top-0 z-50 flex h-auto min-h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
+        aria-label="Menüyü aç"
+      >
+        <Menu size={22} strokeWidth={2} />
+      </button>
+
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-base font-semibold leading-tight text-slate-900 sm:text-lg">{title}</h1>
+        {subtitle && (
+          <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">{subtitle}</p>
+        )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <button className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+        <button className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700">
           <Bell size={18} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
         </button>
         <Link
           href="/settings"
-          className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700"
           aria-label="Hesap ayarları"
         >
           <Settings size={18} />
         </Link>
 
-        <div className="pl-3 ml-1 border-l border-slate-200">
+        <div className="ml-1 border-l border-slate-200 pl-2 sm:ml-1 sm:pl-3">
           <UserAvatar profile={profile} loading={loading} size={36} className="text-sm cursor-pointer" />
         </div>
       </div>

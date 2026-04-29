@@ -326,18 +326,18 @@ export default function ProductsPage() {
                             {status.label}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-3 py-4 sm:px-6">
+                          <div className="flex max-w-[220px] flex-wrap items-center justify-end gap-1.5 sm:max-w-none sm:flex-nowrap sm:gap-2">
                             <Link
                               href={`/products/${product.productId}/preview`}
-                              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-sky-50 hover:text-sky-600 border border-slate-200 hover:border-sky-200 text-xs font-medium transition-all"
+                              className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[11px] font-medium text-slate-600 transition-all hover:border-sky-200 hover:bg-sky-50 hover:text-sky-600 sm:gap-1.5 sm:px-3 sm:text-xs"
                             >
                               <Eye size={13} />
                               Görüntüle
                             </Link>
                             <Link
                               href={`/products/${product.productId}`}
-                              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 text-xs font-medium transition-all"
+                              className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[11px] font-medium text-slate-600 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 sm:gap-1.5 sm:px-3 sm:text-xs"
                             >
                               <Edit2 size={13} />
                               Düzenle
@@ -345,7 +345,7 @@ export default function ProductsPage() {
                             <button
                               type="button"
                               onClick={() => setDeleteId(product.productId)}
-                              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 text-xs font-medium transition-all"
+                              className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[11px] font-medium text-slate-600 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:gap-1.5 sm:px-3 sm:text-xs"
                             >
                               <Trash2 size={13} />
                               Sil
