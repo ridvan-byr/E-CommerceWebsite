@@ -32,6 +32,25 @@ public class ProductRepository : IProductRepository
         return product;
     }
 
+    // REVIEW [C1] Bu metod kategori tablosunu sorguluyor ama burası
+    // ProductRepository. Single Responsibility (SOLID-S) ihlali: bir
+    // repository sadece kendi aggregate'inin verisinden sorumlu olmalı.
+    // ProductService bir "kategori var mı?" kontrolüne ihtiyaç duyuyorsa,
+    // bunu ICategoryRepository'den almalı:
+    //
+    //     // CategoryRepository.cs zaten var; bu metodu oraya taşı.
+    //     // ProductService constructor'a ICategoryRepository ekle.
+    //     // Çağrı:
+    //     //   var ok = await _categoryRepository.ExistsActiveAsync(...)
+    //
+    // Aynı yorum aşağıdaki GetCategoryNameAsync ve GetCategoryNamesByIdsAsync
+    // için de geçerli. Hepsi ICategoryRepository'nin işi.
+    //
+    // Repository sınırlarını net çizmenin pratik faydası: testlerde mock'lamak
+    // kolaylaşır, hangi repository hangi tablodan sorumlu hızlı anlaşılır,
+    // değişiklik etkisi öngörülebilir olur.
+    //
+    // Anahtar kelime: "Single Responsibility Principle", "aggregate root DDD".
     public Task<bool> CategoryExistsActiveAsync(int categoryId, CancellationToken cancellationToken = default) =>
         _context.Categories.AsNoTracking()
             .AnyAsync(c => c.CategoryId == categoryId && !c.IsDeleted, cancellationToken);
@@ -74,7 +93,26 @@ public class ProductRepository : IProductRepository
         if (ids.Count == 0)
             return new Dictionary<int, string>();
 
-        
+        // REVIEW [B5] Aşağıdaki iki satır dead code:
+        //
+        //     var idsList = ids.ToList();
+        //     if (idsList.Count == 0) return new Dictionary<int, string>();
+        //
+        // İlk `if (ids.Count == 0)` kontrolünden geçtiyse `Count > 0` zaten
+        // garanti — ikinci kontrol asla `true` olamaz. `idsList`'e de gerek
+        // yok çünkü `HashSet<int>` `Contains` için zaten verimli ve LINQ
+        // `Contains` çağrısı `IEnumerable<int>` ile çalışıyor.
+        //
+        // Sadeleştirilmiş hali:
+        //
+        //     var rows = await _context.Categories.AsNoTracking()
+        //         .Where(c => !c.IsDeleted && ids.Contains(c.CategoryId))
+        //         .Select(c => new { c.CategoryId, c.Name })
+        //         .ToListAsync(cancellationToken);
+        //
+        // Genel ipucu: kod review'larında "bu satır olmasa ne değişir?" diye sor.
+        // Cevap "hiçbir şey" ise sil. Codebase'de gürültü, asıl iş mantığını
+        // okumayı zorlaştırır.
         var idsList = ids.ToList();
         if (idsList.Count == 0) return new Dictionary<int, string>();
 
