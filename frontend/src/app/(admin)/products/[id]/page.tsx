@@ -345,28 +345,30 @@ export default function ProductEditPage() {
   };
 
   const inputClass = (field: string) =>
-    `w-full h-11 px-4 rounded-xl border text-slate-800 text-sm ${errors[field] ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`;
+    `w-full h-11 rounded-xl border px-4 text-sm transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/25 dark:text-slate-100 dark:placeholder:text-slate-500 ${errors[field] ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30" : "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/80"}`;
 
   if (loadInit) {
     return (
-      <div className="max-w-3xl mx-auto py-20 text-center text-slate-500 text-sm">Yükleniyor…</div>
+      <div className="mx-auto max-w-3xl py-20 text-center text-sm text-slate-600 dark:text-slate-400">
+        Yükleniyor…
+      </div>
     );
   }
 
   if (notFound || !product) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6">
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm"
+          className="inline-flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           <ArrowLeft size={16} /> Geri
         </button>
-        <div className="flex flex-col items-center gap-4 py-16 bg-white rounded-2xl border border-slate-200">
-          <AlertCircle size={24} className="text-red-500" />
-          <h2 className="text-slate-900 font-bold">Ürün bulunamadı</h2>
-          <Link href="/products" className="text-indigo-600 text-sm font-medium">
+        <div className="admin-card flex flex-col items-center gap-4 py-16">
+          <AlertCircle size={24} className="text-red-500 dark:text-red-400" />
+          <h2 className="font-bold text-slate-900 dark:text-slate-50">Ürün bulunamadı</h2>
+          <Link href="/products" className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
             Ürün listesine dön
           </Link>
         </div>
@@ -375,11 +377,11 @@ export default function ProductEditPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <button
         type="button"
         onClick={() => router.back()}
-        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm"
+        className="inline-flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
       >
         <ArrowLeft size={16} /> Geri
       </button>
@@ -387,14 +389,14 @@ export default function ProductEditPage() {
       {apiError && (
         <div
           role="alert"
-          className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm flex gap-3 items-start"
+          className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
         >
-          <AlertCircle className="shrink-0 text-red-600 mt-0.5" size={18} />
+          <AlertCircle className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" size={18} />
           <p className="flex-1">{apiError}</p>
           <button
             type="button"
             onClick={() => setApiError(null)}
-            className="shrink-0 p-1 rounded-lg text-red-700 hover:bg-red-100"
+            className="shrink-0 rounded-lg p-1 text-red-700 transition-colors hover:bg-red-100 dark:text-red-300 dark:hover:bg-red-950/60"
             aria-label="Kapat"
           >
             <X size={16} />
@@ -403,18 +405,18 @@ export default function ProductEditPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
-          <Package size={17} className="text-indigo-600" />
+        <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/40">
+          <Package size={17} className="text-indigo-600 dark:text-indigo-400" />
           <div>
-            <h2 className="text-indigo-900 font-semibold text-sm">Ürün düzenle</h2>
-            <p className="text-indigo-600 text-xs">
+            <h2 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Ürün düzenle</h2>
+            <p className="text-xs text-indigo-600 dark:text-indigo-300">
               #{product.productId} · {product.sku}
             </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-          <h3 className="font-semibold text-slate-900">Temel</h3>
+        <div className="admin-card space-y-4 p-6">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-50">Temel</h3>
           <input
             type="text"
             value={form.name}
@@ -422,16 +424,18 @@ export default function ProductEditPage() {
             className={inputClass("name")}
             placeholder="Ürün adı"
           />
-          {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+          {errors.name && <p className="text-xs text-red-500 dark:text-red-400">{errors.name}</p>}
           <textarea
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             rows={4}
-            className={`w-full px-4 py-3 rounded-xl border text-sm ${errors.description ? "border-red-300" : "border-slate-200"}`}
+            className={`w-full resize-none rounded-xl border px-4 py-3 text-sm transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/25 dark:text-slate-100 dark:placeholder:text-slate-500 ${errors.description ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30" : "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/80"}`}
             placeholder="Açıklama"
           />
-          {errors.description && <p className="text-red-500 text-xs">{errors.description}</p>}
-          <label className="block text-slate-600 text-xs font-medium">SKU *</label>
+          {errors.description && (
+            <p className="text-xs text-red-500 dark:text-red-400">{errors.description}</p>
+          )}
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">SKU *</label>
           <input
             type="text"
             value={form.sku}
@@ -440,7 +444,7 @@ export default function ProductEditPage() {
             className={inputClass("sku")}
             placeholder="Stok kodu"
           />
-          {errors.sku && <p className="text-red-500 text-xs">{errors.sku}</p>}
+          {errors.sku && <p className="text-xs text-red-500 dark:text-red-400">{errors.sku}</p>}
           <select
             value={form.categoryId}
             onChange={(e) => set("categoryId", e.target.value)}
@@ -460,15 +464,15 @@ export default function ProductEditPage() {
             maxLength={14}
             className={inputClass("barcode")}
           />
-          {errors.barcode && <p className="text-red-500 text-xs">{errors.barcode}</p>}
+          {errors.barcode && <p className="text-xs text-red-500 dark:text-red-400">{errors.barcode}</p>}
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div className="admin-card space-y-4 p-6">
           <div className="flex items-center gap-2">
-            <DollarSign size={18} className="text-emerald-600" />
-            <h3 className="font-semibold text-slate-900">Fiyat & stok</h3>
+            <DollarSign size={18} className="text-emerald-600 dark:text-emerald-400" />
+            <h3 className="font-semibold text-slate-900 dark:text-slate-50">Fiyat & stok</h3>
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
             <input
               type="checkbox"
               checked={form.isDiscount}
@@ -478,7 +482,7 @@ export default function ProductEditPage() {
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500 font-medium">
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {form.isDiscount ? "Liste fiyatı" : "Satış fiyatı"}
               </label>
               <input
@@ -487,11 +491,11 @@ export default function ProductEditPage() {
                 onChange={(e) => set("price", e.target.value)}
                 className={inputClass("price")}
               />
-              {errors.price && <p className="text-red-500 text-xs">{errors.price}</p>}
+              {errors.price && <p className="text-xs text-red-500 dark:text-red-400">{errors.price}</p>}
             </div>
             {form.isDiscount && (
               <div>
-                <label className="text-xs text-slate-500 font-medium">İndirimli satış</label>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">İndirimli satış</label>
                 <input
                   type="number"
                   value={form.discountPrice}
@@ -499,41 +503,43 @@ export default function ProductEditPage() {
                   className={inputClass("discountPrice")}
                 />
                 {errors.discountPrice && (
-                  <p className="text-red-500 text-xs">{errors.discountPrice}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400">{errors.discountPrice}</p>
                 )}
               </div>
             )}
             <div>
-              <label className="text-xs text-slate-500 font-medium">Stok</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Stok</label>
               <input
                 type="number"
                 value={form.stock}
                 onChange={(e) => set("stock", e.target.value)}
                 className={inputClass("stock")}
               />
-              {errors.stock && <p className="text-red-500 text-xs">{errors.stock}</p>}
+              {errors.stock && <p className="text-xs text-red-500 dark:text-red-400">{errors.stock}</p>}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div className="admin-card space-y-4 p-6">
           <div className="flex items-center gap-2">
-            <ImageIcon size={18} className="text-purple-600" />
-            <h3 className="font-semibold text-slate-900">Görsel & durum</h3>
+            <ImageIcon size={18} className="text-purple-600 dark:text-purple-400" />
+            <h3 className="font-semibold text-slate-900 dark:text-slate-50">Görsel & durum</h3>
           </div>
           <ImageUpload
             value={form.image}
             onChange={(url) => set("image", url)}
             disabled={loadInit}
           />
-          <div className="flex gap-2">
+          <div className="flex items-stretch gap-2">
             {(["active", "inactive", "draft"] as const).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => set("status", s)}
-                className={`flex-1 h-9 rounded-lg border text-sm font-medium ${
-                  form.status === s ? "border-indigo-500 bg-indigo-50 text-indigo-800" : "border-slate-200"
+                className={`flex min-h-10 flex-1 items-center justify-center rounded-lg border px-2 text-center text-sm font-medium leading-none transition-colors ${
+                  form.status === s
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-400 dark:bg-indigo-950/50 dark:text-indigo-200"
+                    : "border-slate-200 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
                 {PRODUCT_STATUS_LABELS[s] ?? s}
@@ -542,17 +548,17 @@ export default function ProductEditPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="admin-card space-y-4 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Layers size={18} className="text-sky-600" />
-              <h3 className="font-semibold text-slate-900">Özellikler</h3>
+              <Layers size={18} className="text-sky-600 dark:text-sky-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-slate-50">Özellikler</h3>
             </div>
             {reorderBusy && (
-              <span className="text-xs text-slate-500">Sıra kaydediliyor…</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Sıra kaydediliyor…</span>
             )}
           </div>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
             Sol tutamacı sürükleyerek sırayı değiştirin. Satır kayıtları anında sunucuya yazılır; ürünün genel
             alanları için en alttaki «Ürün bilgilerini kaydet» kullanılır.
           </p>
@@ -562,27 +568,29 @@ export default function ProductEditPage() {
               role="status"
               className={`rounded-xl border px-3 py-2.5 text-sm flex gap-2.5 items-start ${
                 featureBanner.variant === "error"
-                  ? "bg-red-50 border-red-200 text-red-900"
+                  ? "border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
                   : featureBanner.variant === "warning"
-                    ? "bg-amber-50 border-amber-200 text-amber-950"
-                    : "bg-emerald-50 border-emerald-200 text-emerald-950"
+                    ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/35 dark:text-emerald-100"
               }`}
             >
               {featureBanner.variant === "success" ? (
-                <CheckCircle className="shrink-0 mt-0.5 text-emerald-600" size={18} />
+                <CheckCircle className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" size={18} />
               ) : (
                 <AlertCircle
-                  className={`shrink-0 mt-0.5 ${
-                    featureBanner.variant === "error" ? "text-red-600" : "text-amber-600"
+                  className={`mt-0.5 shrink-0 ${
+                    featureBanner.variant === "error"
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-amber-600 dark:text-amber-400"
                   }`}
                   size={18}
                 />
               )}
-              <p className="flex-1 min-w-0 leading-snug">{featureBanner.message}</p>
+              <p className="min-w-0 flex-1 leading-snug">{featureBanner.message}</p>
               <button
                 type="button"
                 onClick={() => setFeatureBanner(null)}
-                className="shrink-0 p-1 rounded-lg opacity-70 hover:opacity-100 hover:bg-black/5"
+                className="shrink-0 rounded-lg p-1 opacity-70 transition-colors hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
                 aria-label="Kapat"
               >
                 <X size={16} />
@@ -597,7 +605,7 @@ export default function ProductEditPage() {
                 onDragOver={handleDragOver(index)}
                 onDrop={handleDrop(index)}
                 className={`rounded-2xl transition-shadow ${
-                  dropTargetIndex === index ? "ring-2 ring-sky-400 ring-offset-2" : ""
+                  dropTargetIndex === index ? "ring-2 ring-sky-400 ring-offset-2 dark:ring-offset-slate-950" : ""
                 }`}
               >
                 <FeatureRowEditor
@@ -617,28 +625,28 @@ export default function ProductEditPage() {
             ))}
           </div>
 
-          <div className="pt-3 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-600 mb-2">Yeni özellik</p>
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 sm:items-end">
+          <div className="border-t border-slate-100 pt-3 dark:border-slate-700/80">
+            <p className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-400">Yeni özellik</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Özellik adı</label>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Özellik adı</label>
                 <input
                   type="text"
                   value={newFeatureName}
                   onChange={(e) => setNewFeatureName(e.target.value)}
                   placeholder="Örn: Renk, RAM"
                   maxLength={100}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Değer</label>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Değer</label>
                 <input
                   type="text"
                   value={newFeatureValue}
                   onChange={(e) => setNewFeatureValue(e.target.value)}
                   placeholder="Örn: Siyah, 8 GB"
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
               <button
@@ -661,7 +669,7 @@ export default function ProductEditPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl disabled:opacity-60"
+          className="h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
         >
           {loading ? "Kaydediliyor…" : "Ürün bilgilerini kaydet"}
         </button>
@@ -706,14 +714,14 @@ function FeatureRowEditor({
     name.trim() === row.featureName.trim() && val === row.value;
 
   return (
-    <div className="group relative flex gap-3 sm:gap-4 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 p-3 sm:p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-shadow">
+    <div className="group relative flex gap-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 p-3 shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-950/90 sm:gap-4 sm:p-4">
       <button
         type="button"
         draggable={!reorderBusy && !busy}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         disabled={reorderBusy || busy}
-        className="flex shrink-0 w-9 h-9 sm:w-10 sm:h-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed touch-none"
+        className="flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 sm:h-10 sm:w-10"
         aria-label="Sürükleyerek sırayı değiştir"
         title="Sürükle"
       >
@@ -722,36 +730,36 @@ function FeatureRowEditor({
 
       <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-slate-500">Özellik adı</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Özellik adı</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={100}
             disabled={busy}
-            className="mt-1 w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400"
+            className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-slate-500">Değer</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Değer</label>
           <input
             value={val}
             onChange={(e) => setVal(e.target.value)}
             disabled={busy}
-            className="mt-1 w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400"
+            className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
-        <p className="sm:col-span-2 text-[11px] text-slate-400">Liste sırası: {index + 1}</p>
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 sm:col-span-2">Liste sırası: {index + 1}</p>
       </div>
 
       <div className="flex shrink-0 flex-col sm:flex-row gap-2 justify-end sm:items-end">
         {pendingDelete ? (
           <div className="flex flex-col gap-2 items-end sm:items-stretch min-w-[140px]">
-            <p className="text-xs text-slate-600 text-right sm:text-left">Kaldırılsın mı?</p>
+            <p className="text-right text-xs text-slate-600 dark:text-slate-400 sm:text-left">Kaldırılsın mı?</p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onCancelDelete}
-                className="flex-1 h-9 px-3 rounded-lg border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50"
+                className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Vazgeç
               </button>
@@ -771,7 +779,7 @@ function FeatureRowEditor({
               type="button"
               disabled={busy || reorderBusy || unchanged || !name.trim()}
               onClick={() => onSave(name, val)}
-              className="h-9 px-4 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-45 disabled:cursor-not-allowed whitespace-nowrap"
+              className="h-9 whitespace-nowrap rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45"
             >
               Kaydet
             </button>
@@ -779,7 +787,7 @@ function FeatureRowEditor({
               type="button"
               disabled={busy || reorderBusy}
               onClick={onRequestDelete}
-              className="h-9 px-4 rounded-xl border border-red-200 bg-white text-red-600 text-xs font-medium hover:bg-red-50 whitespace-nowrap"
+              className="h-9 whitespace-nowrap rounded-xl border border-red-200 bg-white px-4 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
             >
               Sil
             </button>

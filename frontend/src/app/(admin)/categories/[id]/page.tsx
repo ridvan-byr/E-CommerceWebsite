@@ -94,7 +94,7 @@ export default function CategoryEditPage() {
           <ArrowLeft size={16} />
           Kategorilere Dön
         </Link>
-        <div className="flex flex-col items-center gap-4 py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col items-center gap-4 py-16 admin-card">
           <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
             <AlertCircle size={24} className="text-red-500" />
           </div>
@@ -130,7 +130,7 @@ export default function CategoryEditPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div className="admin-card p-6 space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
               <Tag size={17} className="text-indigo-600" />

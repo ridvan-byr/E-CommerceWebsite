@@ -32,7 +32,7 @@ interface SidebarProps {
 const navGroups = [
   {
     label: "Genel",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    items: [{ href: "/dashboard", label: "Kontrol paneli", icon: LayoutDashboard }],
   },
   {
     label: "Siparişler",
@@ -92,12 +92,12 @@ export default function Sidebar({
   return (
     <aside
       style={{ width: effectiveCollapsed ? 72 : 260 }}
-      className={`fixed top-0 left-0 z-[60] flex h-[100dvh] flex-col overflow-hidden border-r border-slate-800 bg-slate-900 transition-[transform,width] duration-300 ease-in-out max-md:!w-[min(280px,85vw)] ${
+      className={`fixed top-0 left-0 z-[60] flex h-[100dvh] flex-col overflow-hidden border-r border-slate-200 bg-white shadow-[4px_0_24px_-12px_rgba(15,23,42,0.08)] transition-[transform,width] duration-300 ease-in-out max-md:!w-[min(280px,85vw)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-none ${
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       } md:translate-x-0`}
     >
       {/* Logo */}
-      <div className="relative h-[72px] border-b border-slate-800 flex-shrink-0">
+      <div className="relative h-[72px] flex-shrink-0 border-b border-slate-200 dark:border-slate-800">
         {/* Expanded */}
         <div
           className={`absolute inset-0 flex items-center justify-between px-3 transition-all duration-200 ${
@@ -118,12 +118,12 @@ export default function Sidebar({
               priority
             />
             <div className="min-w-0">
-              <span className="text-white font-bold text-lg tracking-tight whitespace-nowrap">
+              <span className="text-lg font-bold tracking-tight whitespace-nowrap text-slate-900 dark:text-white">
                 GelAl.com
               </span>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Sparkles size={10} className="text-indigo-400" />
-                <span className="text-indigo-400 text-xs font-medium whitespace-nowrap">
+              <div className="mt-0.5 flex items-center gap-1">
+                <Sparkles size={10} className="text-indigo-600 dark:text-indigo-400" />
+                <span className="whitespace-nowrap text-xs font-medium text-indigo-600 dark:text-indigo-400">
                   E-Ticaret Paneli
                 </span>
               </div>
@@ -132,7 +132,7 @@ export default function Sidebar({
           <button
             onClick={onToggle}
             title="Daralt"
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-all"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           >
             <PanelLeftClose size={18} />
           </button>
@@ -147,7 +147,7 @@ export default function Sidebar({
           <button
             onClick={onToggle}
             title="Genişlet"
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
           >
             <PanelLeftOpen size={20} />
           </button>
@@ -163,7 +163,7 @@ export default function Sidebar({
                 effectiveCollapsed ? "mb-0 h-0 opacity-0" : "mb-2 h-5 opacity-100"
               }`}
             >
-              <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest px-3 whitespace-nowrap">
+              <p className="whitespace-nowrap px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                 {group.label}
               </p>
             </div>
@@ -178,10 +178,10 @@ export default function Sidebar({
                       href={item.href}
                       title={effectiveCollapsed ? item.label : undefined}
                       onClick={() => onMobileClose?.()}
-                      className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
+                      className={`group flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-all duration-150 ${
                         active
                           ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                       }`}
                     >
                       <Icon
@@ -189,7 +189,7 @@ export default function Sidebar({
                         className={`flex-shrink-0 ${
                           active
                             ? "text-white"
-                            : "text-slate-500 group-hover:text-slate-300"
+                            : "text-slate-500 group-hover:text-slate-800 dark:text-slate-500 dark:group-hover:text-slate-300"
                         }`}
                       />
                       <span
@@ -212,7 +212,7 @@ export default function Sidebar({
       </nav>
 
       {/* Bottom User */}
-      <div className="border-t border-slate-800 p-3 flex-shrink-0">
+      <div className="flex-shrink-0 border-t border-slate-200 p-3 dark:border-slate-800">
         <div
           className={`mb-2 flex items-center gap-3 overflow-hidden transition-all duration-300 ${
             effectiveCollapsed ? "justify-center" : ""
@@ -230,14 +230,14 @@ export default function Sidebar({
               effectiveCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
             }`}
           >
-            <p className="text-white text-sm font-semibold truncate whitespace-nowrap">
+            <p className="truncate whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white">
               {profileLoading
                 ? "…"
                 : profile
                   ? displayName(profile)
                   : "Oturum yok"}
             </p>
-            <p className="text-slate-500 text-xs truncate whitespace-nowrap">
+            <p className="truncate whitespace-nowrap text-xs text-slate-600 dark:text-slate-400">
               {profileLoading ? "…" : profile?.email ?? "—"}
             </p>
           </div>
@@ -250,7 +250,7 @@ export default function Sidebar({
             void handleLogout();
           }}
           title={effectiveCollapsed ? "Çıkış Yap" : undefined}
-          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-400 transition-all hover:bg-slate-800 hover:text-red-400 ${
+          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 transition-all hover:bg-slate-100 hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-red-400 ${
             effectiveCollapsed ? "justify-center" : ""
           }`}
         >

@@ -23,6 +23,7 @@ import { loginWithGoogle, register, resendVerificationEmail } from "@/lib/api/au
 import { ApiRequestError, setStoredUserProfile } from "@/lib/api/client";
 import { isPasswordCompliant, PASSWORD_POLICY_MESSAGE } from "@/lib/passwordPolicy";
 import KvkkModal from "@/components/KvkkModal";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -228,7 +229,10 @@ export default function RegisterPage() {
     <>
       <KvkkModal open={kvkkOpen} onClose={() => setKvkkOpen(false)} />
 
-      <div className="min-h-screen flex bg-white">
+      <div className="relative flex min-h-screen bg-white dark:bg-slate-950">
+        <div className="absolute right-4 top-4 z-20">
+          <ThemeToggle variant="minimal" />
+        </div>
         {/* Sol Panel */}
         <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-14 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
           <div

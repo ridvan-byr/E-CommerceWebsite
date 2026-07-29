@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <SessionGuard>
       <KvkkGuard>
         <div
-          className="min-h-screen bg-slate-100 flex min-h-[100dvh]"
+          className="min-h-screen flex min-h-[100dvh] bg-slate-100 dark:bg-slate-950"
           style={{ ["--admin-sidebar" as string]: `${sidebarPx}px` }}
         >
           <Sidebar
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {mobileNavOpen && (
             <div
               role="presentation"
-              className="fixed inset-0 z-[55] bg-slate-950/50 backdrop-blur-[2px] md:hidden"
+              className="fixed inset-0 z-[55] bg-slate-950/50 backdrop-blur-[2px] dark:bg-black/60 md:hidden"
               onClick={() => setMobileNavOpen(false)}
             />
           )}

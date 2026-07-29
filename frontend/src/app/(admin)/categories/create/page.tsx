@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,7 +55,10 @@ export default function CategoryCreatePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <FadeUp delay={0}>
-        <Link href="/categories" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors">
+        <Link
+          href="/categories"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+        >
           <ArrowLeft size={16} />
           Kategorilere Dön
         </Link>
@@ -63,25 +66,27 @@ export default function CategoryCreatePage() {
 
       {apiError && (
         <FadeUp delay={0}>
-          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+            {apiError}
+          </div>
         </FadeUp>
       )}
 
       <FadeUp delay={80}>
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
-              <Tag size={17} className="text-indigo-600" />
+        <div className="admin-card p-6 space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700/80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/50">
+              <Tag size={17} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h2 className="text-slate-900 font-semibold">Yeni kategori</h2>
-              <p className="text-slate-400 text-xs">Yalnızca kategori adı yeterlidir</p>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-50">Yeni kategori</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Yalnızca kategori adı yeterlidir</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-700 text-sm font-medium mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Kategori adı <span className="text-red-500">*</span>
             </label>
             <input
@@ -89,7 +94,7 @@ export default function CategoryCreatePage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Örn: Elektronik, Giyim…"
-              className={`w-full h-11 px-4 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.name ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
+              className={`h-11 w-full rounded-xl border px-4 text-sm text-slate-800 transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-100 dark:placeholder:text-slate-500 ${errors.name ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30" : "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/80"}`}
             />
             {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
           </div>
@@ -98,7 +103,7 @@ export default function CategoryCreatePage() {
         <div className="flex gap-3">
           <Link
             href="/categories"
-            className="flex-1 h-11 flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all"
+            className="flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             İptal
           </Link>

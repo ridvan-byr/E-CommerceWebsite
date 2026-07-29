@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import {
@@ -22,11 +22,16 @@ const STATUS_LABEL: Record<MockOrderStatus, string> = {
 };
 
 const STATUS_CLASS: Record<MockOrderStatus, string> = {
-  pending: "bg-amber-50 text-amber-800 ring-amber-100",
-  processing: "bg-blue-50 text-blue-800 ring-blue-100",
-  shipped: "bg-indigo-50 text-indigo-800 ring-indigo-100",
-  completed: "bg-emerald-50 text-emerald-800 ring-emerald-100",
-  cancelled: "bg-slate-100 text-slate-600 ring-slate-200/80",
+  pending:
+    "bg-amber-50 text-amber-800 ring-amber-100 dark:bg-amber-950/45 dark:text-amber-300 dark:ring-amber-800/40",
+  processing:
+    "bg-blue-50 text-blue-800 ring-blue-100 dark:bg-blue-950/45 dark:text-blue-300 dark:ring-blue-800/40",
+  shipped:
+    "bg-indigo-50 text-indigo-800 ring-indigo-100 dark:bg-indigo-950/45 dark:text-indigo-300 dark:ring-indigo-800/40",
+  completed:
+    "bg-emerald-50 text-emerald-800 ring-emerald-100 dark:bg-emerald-950/45 dark:text-emerald-300 dark:ring-emerald-800/40",
+  cancelled:
+    "bg-slate-100 text-slate-600 ring-slate-200/80 dark:bg-slate-800/90 dark:text-slate-300 dark:ring-slate-600/60",
 };
 
 const PAYMENT_LABEL: Record<CustomerOrder["paymentMethod"], string> = {
@@ -102,7 +107,7 @@ export default function OrdersPage() {
           <div className="relative flex-1 lg:max-w-xl">
             <Search
               size={16}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
             />
             <input
               type="search"
@@ -110,19 +115,19 @@ export default function OrdersPage() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Sipariş no, müşteri, e-posta, telefon veya ürün / SKU…"
               autoComplete="off"
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-400">
               <SlidersHorizontal size={15} />
               <span className="text-sm font-medium">Durum:</span>
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as MockOrderStatus | "all")}
-              className="h-10 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="h-10 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="all">Tümü</option>
               {(Object.keys(STATUS_LABEL) as MockOrderStatus[]).map((s) => (
@@ -136,20 +141,20 @@ export default function OrdersPage() {
       </FadeUp>
 
       <FadeUp delay={40}>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-6">
-            <p className="text-sm text-slate-500">
-              <span className="font-semibold text-slate-900">{sorted.length}</span> sipariş
+        <div className="overflow-hidden admin-card-soft">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-700/80 sm:px-6">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-900 dark:text-slate-50">{sorted.length}</span> sipariş
               {search.trim() || statusFilter !== "all" ? " (filtreye uygun)" : ""}
             </p>
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700 ring-1 ring-amber-100">
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800 ring-1 ring-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-900/50">
               mock veri
             </span>
           </div>
 
           {sorted.length === 0 ? (
             <div className="px-4 py-16 text-center sm:px-6">
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Bu filtrelere uygun sipariş yok. Arama terimini veya durumu değiştirin.
               </p>
             </div>
@@ -157,66 +162,66 @@ export default function OrdersPage() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px]">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/80">
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
+                  <tr className="border-b border-slate-100 bg-slate-50/90 dark:border-slate-700/80 dark:bg-slate-800/60">
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 sm:px-6">
                       Sipariş
                     </th>
-                    <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
                       Müşteri
                     </th>
-                    <th className="hidden px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:table-cell">
+                    <th className="hidden px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 lg:table-cell">
                       Özet
                     </th>
-                    <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
                       Tutar
                     </th>
-                    <th className="hidden px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:table-cell">
+                    <th className="hidden px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 md:table-cell">
                       Ödeme
                     </th>
-                    <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
                       Durum
                     </th>
-                    <th className="hidden px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:table-cell sm:px-6">
+                    <th className="hidden px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 sm:table-cell sm:px-6">
                       Tarih
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/70">
                   {sorted.map((order) => {
                     const PayIcon = PAYMENT_ICON[order.paymentMethod];
                     const dt = new Date(order.createdAt);
                     return (
-                      <tr key={order.id} className="transition-colors hover:bg-slate-50/70">
+                      <tr key={order.id} className="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-800/40">
                         <td className="px-4 py-4 align-top sm:px-6">
-                          <span className="font-mono text-sm font-semibold text-indigo-700">
+                          <span className="font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-400">
                             {order.id}
                           </span>
-                          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 lg:hidden">
+                          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 lg:hidden">
                             <MapPin size={11} className="shrink-0" />
                             {order.city}
                           </p>
                         </td>
                         <td className="max-w-[200px] px-3 py-4 align-top">
-                          <p className="truncate text-sm font-semibold text-slate-900">
+                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
                             {order.customerName}
                           </p>
-                          <p className="truncate text-xs text-slate-500">{order.customerEmail}</p>
-                          <p className="mt-0.5 font-mono text-[11px] text-slate-400">{order.phone}</p>
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{order.customerEmail}</p>
+                          <p className="mt-0.5 font-mono text-[11px] text-slate-400 dark:text-slate-500">{order.phone}</p>
                         </td>
                         <td className="hidden max-w-[280px] px-3 py-4 align-top lg:table-cell">
-                          <p className="line-clamp-2 text-sm text-slate-700">{order.summary}</p>
+                          <p className="line-clamp-2 text-sm text-slate-700 dark:text-slate-300">{order.summary}</p>
                           {order.searchSku && (
-                            <p className="mt-1 font-mono text-[11px] text-slate-400">{order.searchSku}</p>
+                            <p className="mt-1 font-mono text-[11px] text-slate-400 dark:text-slate-500">{order.searchSku}</p>
                           )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 align-top">
-                          <span className="text-sm font-bold text-slate-900">
+                          <span className="text-sm font-bold text-slate-900 dark:text-slate-50">
                             ₺{order.amount.toLocaleString("tr-TR")}
                           </span>
                         </td>
                         <td className="hidden px-3 py-4 align-top md:table-cell">
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">
-                            <PayIcon size={13} className="text-slate-500" />
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
+                            <PayIcon size={13} className="text-slate-500 dark:text-slate-400" />
                             {PAYMENT_LABEL[order.paymentMethod]}
                           </span>
                         </td>
@@ -227,13 +232,13 @@ export default function OrdersPage() {
                             {STATUS_LABEL[order.status]}
                           </span>
                           <div className="mt-2 md:hidden">
-                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                               <PayIcon size={12} />
                               {PAYMENT_LABEL[order.paymentMethod]}
                             </span>
                           </div>
                         </td>
-                        <td className="hidden whitespace-nowrap px-4 py-4 align-top text-right text-xs text-slate-500 sm:table-cell sm:px-6">
+                        <td className="hidden whitespace-nowrap px-4 py-4 align-top text-right text-xs text-slate-500 dark:text-slate-400 sm:table-cell sm:px-6">
                           <time dateTime={order.createdAt}>
                             {dt.toLocaleDateString("tr-TR", {
                               day: "numeric",
@@ -247,7 +252,7 @@ export default function OrdersPage() {
                               minute: "2-digit",
                             })}
                           </p>
-                          <p className="mt-1 hidden items-center justify-end gap-1 text-slate-400 lg:flex">
+                          <p className="mt-1 hidden items-center justify-end gap-1 text-slate-400 dark:text-slate-500 lg:flex">
                             <MapPin size={11} />
                             {order.city}
                           </p>
@@ -263,7 +268,7 @@ export default function OrdersPage() {
       </FadeUp>
 
       <FadeUp delay={80}>
-        <p className="text-center text-xs text-slate-400">
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
           Bu liste örnek veridir; sipariş API’si bağlandığında aynı filtre mantığı sunucu tarafına taşınabilir.
         </p>
       </FadeUp>

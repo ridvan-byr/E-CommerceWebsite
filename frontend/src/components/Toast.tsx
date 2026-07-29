@@ -112,28 +112,32 @@ const VARIANT_STYLES: Record<
   { border: string; bg: string; icon: React.ReactNode; title: string }
 > = {
   success: {
-    border: "border-emerald-200",
-    bg: "bg-emerald-50",
-    icon: <CheckCircle2 size={18} className="text-emerald-600" />,
-    title: "text-emerald-900",
+    border: "border-emerald-200 dark:border-emerald-800",
+    bg: "bg-emerald-50 dark:bg-emerald-950/70",
+    icon: (
+      <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" />
+    ),
+    title: "text-emerald-900 dark:text-emerald-100",
   },
   error: {
-    border: "border-red-200",
-    bg: "bg-red-50",
-    icon: <AlertCircle size={18} className="text-red-600" />,
-    title: "text-red-900",
+    border: "border-red-200 dark:border-red-800",
+    bg: "bg-red-50 dark:bg-red-950/70",
+    icon: <AlertCircle size={18} className="text-red-600 dark:text-red-400" />,
+    title: "text-red-900 dark:text-red-100",
   },
   info: {
-    border: "border-sky-200",
-    bg: "bg-sky-50",
-    icon: <Info size={18} className="text-sky-600" />,
-    title: "text-sky-900",
+    border: "border-sky-200 dark:border-sky-800",
+    bg: "bg-sky-50 dark:bg-sky-950/70",
+    icon: <Info size={18} className="text-sky-600 dark:text-sky-400" />,
+    title: "text-sky-900 dark:text-sky-100",
   },
   warning: {
-    border: "border-amber-200",
-    bg: "bg-amber-50",
-    icon: <AlertTriangle size={18} className="text-amber-600" />,
-    title: "text-amber-900",
+    border: "border-amber-200 dark:border-amber-800",
+    bg: "bg-amber-50 dark:bg-amber-950/70",
+    icon: (
+      <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400" />
+    ),
+    title: "text-amber-900 dark:text-amber-100",
   },
 };
 
@@ -162,12 +166,14 @@ function ToastCard({
         {toast.title && (
           <p className={`text-sm font-semibold ${style.title}`}>{toast.title}</p>
         )}
-        <p className="text-sm text-slate-700 break-words">{toast.message}</p>
+        <p className="break-words text-sm text-slate-700 dark:text-slate-200">
+          {toast.message}
+        </p>
       </div>
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-white/60 hover:text-slate-700 transition-colors"
+        className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-white/60 hover:text-slate-700 dark:hover:bg-slate-800/80 dark:hover:text-slate-100"
         aria-label="Kapat"
       >
         <X size={14} />

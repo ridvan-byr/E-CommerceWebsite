@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -164,52 +164,54 @@ export default function ProductCreatePage() {
   };
 
   const inputClass = (field: string) =>
-    `w-full h-11 px-4 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors[field] ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`;
+    `w-full h-11 rounded-xl border px-4 text-sm text-slate-800 transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/25 dark:text-slate-100 dark:placeholder:text-slate-500 ${errors[field] ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30" : "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/80"}`;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <Link
         href="/products"
-        className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
       >
         <ArrowLeft size={16} /> Ürünlere Dön
       </Link>
 
       {catalogLoadError && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
           {catalogLoadError}
         </div>
       )}
 
       {apiError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">{apiError}</div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+          {apiError}
+        </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-          <CheckCircle size={20} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-emerald-700 text-sm font-medium">
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/35">
+          <CheckCircle size={20} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
             Ürün başarıyla oluşturuldu! Yönlendiriliyorsunuz...
           </p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
-              <Package size={17} className="text-indigo-600" />
+        <div className="admin-card p-6 space-y-5">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700/80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/50">
+              <Package size={17} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h2 className="text-slate-900 font-semibold">Temel Bilgiler</h2>
-              <p className="text-slate-400 text-xs">Ürünün temel bilgilerini girin</p>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-50">Temel Bilgiler</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Ürünün temel bilgilerini girin</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-slate-700 text-sm font-medium mb-2">
-                Ürün Adı <span className="text-red-500">*</span>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Ürün Adı <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -218,28 +220,28 @@ export default function ProductCreatePage() {
                 placeholder="Örn: iPhone 15 Pro..."
                 className={inputClass("name")}
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.name}</p>}
+              {errors.name && <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.name}</p>}
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-slate-700 text-sm font-medium mb-2">
-                Açıklama <span className="text-red-500">*</span>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Açıklama <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <textarea
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
                 placeholder="Ürün hakkında detaylı bir açıklama..."
                 rows={4}
-                className={`w-full px-4 py-3 rounded-xl border text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.description ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
+                className={`w-full resize-none rounded-xl border px-4 py-3 text-sm text-slate-800 transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/25 dark:text-slate-100 dark:placeholder:text-slate-500 ${errors.description ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30" : "border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800/80"}`}
               />
               {errors.description && (
-                <p className="text-red-500 text-xs mt-1.5">⚠ {errors.description}</p>
+                <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.description}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">
-                Stok kodu (SKU) <span className="text-red-500">*</span>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Stok kodu (SKU) <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -250,15 +252,15 @@ export default function ProductCreatePage() {
                 autoComplete="off"
                 className={inputClass("sku")}
               />
-              <p className="text-slate-400 text-[11px] mt-1">
+              <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                 Mağaza içi benzersiz kod; harf, rakam ve . _ - / kullanılabilir.
               </p>
-              {errors.sku && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.sku}</p>}
+              {errors.sku && <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.sku}</p>}
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">
-                Barkod (GTIN) <span className="text-slate-400 font-normal">(isteğe bağlı)</span>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Barkod (GTIN) <span className="font-normal text-slate-400 dark:text-slate-500">(isteğe bağlı)</span>
               </label>
               <input
                 type="text"
@@ -269,20 +271,20 @@ export default function ProductCreatePage() {
                 maxLength={14}
                 className={inputClass("barcode")}
               />
-              <p className="text-slate-400 text-[11px] mt-1">
+              <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                 GS1 barkodu; 8, 12, 13 veya 14 hane, doğrulama hanesi kontrol edilir.
               </p>
-              {errors.barcode && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.barcode}</p>}
+              {errors.barcode && <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.barcode}</p>}
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-slate-700 text-sm font-medium mb-2">
-                Kategori <span className="text-red-500">*</span>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Kategori <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <select
                 value={form.categoryId}
                 onChange={(e) => set("categoryId", e.target.value)}
-                className={`w-full h-11 px-4 rounded-xl border text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${errors.categoryId ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
+                className={`cursor-pointer ${inputClass("categoryId")}`}
               >
                 <option value="">Kategori seçin...</option>
                 {categories.map((c) => (
@@ -292,30 +294,32 @@ export default function ProductCreatePage() {
                 ))}
               </select>
               {errors.categoryId && (
-                <p className="text-red-500 text-xs mt-1.5">⚠ {errors.categoryId}</p>
+                <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.categoryId}</p>
               )}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
-              <DollarSign size={17} className="text-emerald-600" />
+        <div className="admin-card space-y-5 p-6">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700/80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/50">
+              <DollarSign size={17} className="text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-slate-900 font-semibold">Fiyat & Stok</h2>
-              <p className="text-slate-400 text-xs">İndirimde liste fiyatı ve satış fiyatı ayrı girilir</p>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-50">Fiyat & Stok</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                İndirimde liste fiyatı ve satış fiyatı ayrı girilir
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 {form.isDiscount ? "Liste fiyatı (₺) *" : "Satış fiyatı (₺) *"}
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400 dark:text-slate-500">
                   ₺
                 </span>
                 <input
@@ -323,14 +327,16 @@ export default function ProductCreatePage() {
                   value={form.price}
                   onChange={(e) => set("price", e.target.value)}
                   placeholder="0.00"
-                  className={`w-full h-11 pl-8 pr-4 rounded-xl border text-slate-800 text-sm ${errors.price ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}
+                  className={`pl-8 ${inputClass("price")}`}
                 />
               </div>
-              {errors.price && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.price}</p>}
+              {errors.price && <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.price}</p>}
             </div>
 
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Stok *</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Stok <span className="text-red-500 dark:text-red-400">*</span>
+              </label>
               <input
                 type="number"
                 value={form.stock}
@@ -338,52 +344,54 @@ export default function ProductCreatePage() {
                 placeholder="0"
                 className={inputClass("stock")}
               />
-              {errors.stock && <p className="text-red-500 text-xs mt-1.5">⚠ {errors.stock}</p>}
+              {errors.stock && <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">⚠ {errors.stock}</p>}
             </div>
 
             <div className="flex items-end pb-0.5">
-              <label className="flex items-center gap-3 cursor-pointer select-none">
+              <label className="flex cursor-pointer select-none items-center gap-3">
                 <input
                   type="checkbox"
                   checked={form.isDiscount}
                   onChange={(e) => set("isDiscount", e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-indigo-600"
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 dark:border-slate-600 dark:bg-slate-800"
                 />
-                <span className="text-slate-700 text-sm font-medium">İndirim</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">İndirim</span>
               </label>
             </div>
           </div>
 
           {form.isDiscount && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-              <label className="block text-amber-900 text-sm font-medium">
+            <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/35">
+              <label className="block text-sm font-medium text-amber-950 dark:text-amber-100">
                 İndirimli satış fiyatı (₺) *
               </label>
               <div className="relative max-w-xs">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₺</span>
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500">
+                  ₺
+                </span>
                 <input
                   type="number"
                   value={form.discountPrice}
                   onChange={(e) => set("discountPrice", e.target.value)}
                   placeholder="0.00"
-                  className={`w-full h-11 pl-8 pr-4 rounded-xl border border-amber-300 bg-white text-sm ${errors.discountPrice ? "ring-2 ring-red-200" : ""}`}
+                  className={`pl-8 ${inputClass("discountPrice")} ${errors.discountPrice ? "ring-2 ring-red-200 dark:ring-red-900/60" : ""}`}
                 />
               </div>
               {errors.discountPrice && (
-                <p className="text-red-600 text-xs">⚠ {errors.discountPrice}</p>
+                <p className="text-xs text-red-600 dark:text-red-400">⚠ {errors.discountPrice}</p>
               )}
             </div>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="w-9 h-9 bg-sky-50 rounded-xl flex items-center justify-center">
-              <Layers size={17} className="text-sky-600" />
+        <div className="admin-card space-y-5 p-6">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700/80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/50">
+              <Layers size={17} className="text-sky-600 dark:text-sky-400" />
             </div>
             <div>
-              <h2 className="text-slate-900 font-semibold">Ürün Özellikleri</h2>
-              <p className="text-slate-400 text-xs">
+              <h2 className="font-semibold text-slate-900 dark:text-slate-50">Ürün Özellikleri</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Özellik adı ve değerini yazıp listeye ekleyin; ürün kaydedildiğinde sunucuya yazılır.
               </p>
             </div>
@@ -395,16 +403,16 @@ export default function ProductCreatePage() {
                 return (
                   <li
                     key={row.localId}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/60"
                   >
                     <div>
-                      <p className="text-xs text-slate-500 font-medium">{row.name}</p>
-                      <p className="text-sm text-slate-800">{row.value}</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{row.name}</p>
+                      <p className="text-sm text-slate-800 dark:text-slate-100">{row.value}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeFeature(row.localId)}
-                      className="text-slate-400 hover:text-red-500 p-1"
+                      className="p-1 text-slate-400 transition-colors hover:text-red-500 dark:hover:text-red-400"
                     >
                       <X size={18} />
                     </button>
@@ -416,31 +424,31 @@ export default function ProductCreatePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 sm:items-end">
             <div>
-              <label className="block text-slate-700 text-xs font-medium mb-1.5">Özellik adı</label>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">Özellik adı</label>
               <input
                 type="text"
                 value={newFeatureName}
                 onChange={(e) => setNewFeatureName(e.target.value)}
                 placeholder="Örn: RAM, Renk"
                 maxLength={100}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition-colors focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="block text-slate-700 text-xs font-medium mb-1.5">Değer</label>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">Değer</label>
               <input
                 type="text"
                 value={newFeatureValue}
                 onChange={(e) => setNewFeatureValue(e.target.value)}
                 placeholder="Örn: 8 GB, Siyah"
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition-colors focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
             <button
               type="button"
               onClick={addFeature}
               disabled={!newFeatureName.trim() || !newFeatureValue.trim()}
-              className="h-10 px-4 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 sm:shrink-0"
+              className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-500 sm:shrink-0"
             >
               <Plus size={15} />
               Ekle
@@ -448,19 +456,19 @@ export default function ProductCreatePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
-              <ImageIcon size={17} className="text-purple-600" />
+        <div className="admin-card space-y-5 p-6">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700/80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/40">
+              <ImageIcon size={17} className="text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h2 className="text-slate-900 font-semibold">Görsel & Durum</h2>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-50">Görsel & Durum</h2>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-5">
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-3">Ürün Görseli</label>
+              <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">Ürün Görseli</label>
               <ImageUpload
                 value={form.image}
                 onChange={(url) => set("image", url)}
@@ -468,8 +476,8 @@ export default function ProductCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-slate-700 text-sm font-medium mb-2">Yayın durumu</label>
-              <div className="flex gap-3">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Yayın durumu</label>
+              <div className="flex items-stretch gap-2">
                 {["active", "inactive", "draft"].map((s) => {
                   const labels: Record<string, string> = {
                     active: "Aktif",
@@ -481,10 +489,10 @@ export default function ProductCreatePage() {
                       key={s}
                       type="button"
                       onClick={() => set("status", s)}
-                      className={`flex-1 h-10 rounded-xl border-2 text-sm font-semibold transition-all ${
+                      className={`flex min-h-10 flex-1 items-center justify-center rounded-lg border px-2 text-center text-sm font-medium leading-none transition-colors ${
                         form.status === s
-                          ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-                          : "border-slate-200 bg-white text-slate-400"
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-400 dark:bg-indigo-950/50 dark:text-indigo-200"
+                          : "border-slate-200 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
                       }`}
                     >
                       {labels[s]}
@@ -499,14 +507,14 @@ export default function ProductCreatePage() {
         <div className="flex gap-3">
           <Link
             href="/products"
-            className="flex-1 h-11 flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+            className="flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             İptal
           </Link>
           <button
             type="submit"
             disabled={loading || success}
-            className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2"
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:bg-indigo-400 dark:disabled:bg-indigo-900/70 dark:disabled:text-indigo-200"
           >
             {loading ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

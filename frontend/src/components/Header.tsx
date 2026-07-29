@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { Bell, Settings, Menu } from "lucide-react";
 import { useCurrentUser } from "@/lib/currentUser";
 import UserAvatar from "@/components/UserAvatar";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
-  "/dashboard": { title: "Dashboard", subtitle: "Genel bakış ve istatistikler" },
+  "/dashboard": { title: "Kontrol paneli", subtitle: "Genel bakış ve istatistikler" },
   "/orders": { title: "Müşteri siparişleri", subtitle: "Sipariş arama ve liste (mock veri)" },
   "/settings": { title: "Hesap ayarları", subtitle: "Profil, güvenlik ve şifre yönetimi" },
   "/categories": { title: "Kategori Listesi", subtitle: "Tüm kategorileri görüntüle ve yönet" },
@@ -35,37 +36,38 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { title, subtitle } = getPageInfo();
 
   return (
-    <header className="sticky top-0 z-50 flex h-auto min-h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+    <header className="sticky top-0 z-50 flex h-auto min-h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 md:hidden dark:text-slate-300 dark:hover:bg-slate-800"
         aria-label="Menüyü aç"
       >
         <Menu size={22} strokeWidth={2} />
       </button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-semibold leading-tight text-slate-900 sm:text-lg">{title}</h1>
+        <h1 className="truncate text-base font-semibold leading-tight text-slate-900 dark:text-slate-50 sm:text-lg">{title}</h1>
         {subtitle && (
-          <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">{subtitle}</p>
+          <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{subtitle}</p>
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-        <button className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <ThemeToggle />
+        <button className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
           <Bell size={18} />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
         </button>
         <Link
           href="/settings"
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
           aria-label="Hesap ayarları"
         >
           <Settings size={18} />
         </Link>
 
-        <div className="ml-1 border-l border-slate-200 pl-2 sm:ml-1 sm:pl-3">
+        <div className="ml-1 border-l border-slate-200 pl-2 dark:border-slate-600 sm:ml-1 sm:pl-3">
           <UserAvatar profile={profile} loading={loading} size={36} className="text-sm cursor-pointer" />
         </div>
       </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -166,36 +166,38 @@ export default function SettingsPage() {
   };
 
   const inputClass =
-    "w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-60";
+    "w-full h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500";
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       {/* Profil */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-        <div className="flex items-start gap-2 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            <Shield className="text-slate-600" size={20} />
+      <section className="admin-card p-6 sm:p-8">
+        <div className="mb-6 flex items-start gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
+            <Shield className="text-slate-600 dark:text-slate-300" size={20} />
           </div>
           <div>
-            <h2 className="text-slate-900 font-semibold text-lg">Profil</h2>
-            <p className="text-slate-500 text-sm mt-0.5">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Profil</h2>
+            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
               Oturum bilgileriniz ve hesaba bağlı giriş yöntemleri.
             </p>
           </div>
         </div>
 
         {profileLoading ? (
-          <p className="text-slate-500 text-sm">Yükleniyor…</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Yükleniyor…</p>
         ) : profile ? (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
             <UserAvatar profile={profile} size={72} className="text-xl shadow-md" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-slate-900 font-semibold text-lg truncate">{displayName(profile)}</p>
-              <p className="text-slate-600 text-sm truncate">{profile.email}</p>
-              <p className="text-slate-400 text-xs uppercase tracking-wide">Rol: {profile.role}</p>
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="truncate text-lg font-semibold text-slate-900 dark:text-slate-50">{displayName(profile)}</p>
+              <p className="truncate text-sm text-slate-600 dark:text-slate-400">{profile.email}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Rol: {profile.role}
+              </p>
               <div className="flex flex-wrap gap-2 pt-3">
                 {hasGoogle && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200/80">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                     <svg width="14" height="14" viewBox="0 0 48 48" aria-hidden>
                       <path
                         fill="#FFC107"
@@ -218,13 +220,13 @@ export default function SettingsPage() {
                   </span>
                 )}
                 {hasPassword && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 text-xs font-medium border border-indigo-100">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/50 dark:text-indigo-300">
                     <Mail size={14} aria-hidden />
                     E-posta ile şifre
                   </span>
                 )}
                 {!firebaseReady && (
-                  <span className="text-amber-700 text-xs font-medium bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-lg">
+                  <span className="rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
                     Firebase oturumu algılanmadı — çıkış yapıp yeniden giriş yapın
                   </span>
                 )}
@@ -232,22 +234,22 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : (
-          <p className="text-slate-500 text-sm">Profil yüklenemedi.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Profil yüklenemedi.</p>
         )}
       </section>
 
       {/* Güvenlik */}
       <section
         id="guvenlik"
-        className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm scroll-mt-24"
+        className="admin-card scroll-mt-24 p-6 sm:p-8"
       >
-        <div className="flex items-start gap-2 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-            <KeyRound className="text-indigo-600" size={20} />
+        <div className="mb-6 flex items-start gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/50">
+            <KeyRound className="text-indigo-600 dark:text-indigo-400" size={20} />
           </div>
           <div>
-            <h2 className="text-slate-900 font-semibold text-lg">Güvenlik ve şifre</h2>
-            <p className="text-slate-500 text-sm mt-0.5 max-w-xl">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Güvenlik ve şifre</h2>
+            <p className="mt-0.5 max-w-xl text-sm text-slate-600 dark:text-slate-400">
               Giriş sayfasındaki e-posta ve şifre alanı Firebase ile çalışır. Google ile kayıt olduysanız
               önce burada bir şifre tanımlayın; böylece aynı e-posta ile formdan da giriş yapabilirsiniz.
             </p>
@@ -256,32 +258,32 @@ export default function SettingsPage() {
 
         <div className="space-y-8">
           {notice && (
-            <div className="flex gap-2 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-900 text-sm">
-              <CheckCircle2 size={18} className="flex-shrink-0 text-emerald-600 mt-0.5" />
+            <div className="flex gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/35 dark:text-emerald-100">
+              <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>{notice}</span>
             </div>
           )}
 
           {/* Google / yalnızca OAuth: şifre tanımla */}
           {!hasPassword ? (
-            <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-5 sm:p-6">
-              <h3 className="text-slate-900 font-medium text-sm mb-1">E-posta ile giriş şifresi oluştur</h3>
-              <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+            <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-5 dark:border-indigo-800/80 dark:bg-indigo-950/25 sm:p-6">
+              <h3 className="mb-1 text-sm font-medium text-slate-900 dark:text-slate-50">E-posta ile giriş şifresi oluştur</h3>
+              <p className="mb-4 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 Hesabınızda henüz panel şifresi yok (ör. yalnızca Google ile kayıt). Aşağıdan belirleyeceğiniz
                 şifre Firebase hesabınıza bağlanır ve sunucu ile eşitlenir.
               </p>
-              <p className="text-xs text-slate-500 mb-4 leading-relaxed">{PASSWORD_POLICY_MESSAGE}</p>
+              <p className="mb-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{PASSWORD_POLICY_MESSAGE}</p>
               {!firebaseReady ? (
-                <p className="text-amber-800 text-sm">Firebase oturumu gerekli. Çıkış yapıp tekrar giriş yapın.</p>
+                <p className="text-sm text-amber-800 dark:text-amber-200">Firebase oturumu gerekli. Çıkış yapıp tekrar giriş yapın.</p>
               ) : (
                 <form onSubmit={handleSetPassword} className="space-y-4 max-w-md">
                   {setError && (
-                    <div className="p-3 rounded-lg bg-red-50 border border-red-100 text-red-700 text-sm">
+                    <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                       {setError}
                     </div>
                   )}
                   <div>
-                    <label className="block text-slate-700 text-sm font-medium mb-1.5">Yeni şifre</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Yeni şifre</label>
                     <div className="relative">
                       <input
                         type={setShow ? "text" : "password"}
@@ -296,14 +298,14 @@ export default function SettingsPage() {
                         type="button"
                         aria-label={setShow ? "Gizle" : "Göster"}
                         onClick={() => setSetShow((v) => !v)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                       >
                         {setShow ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-slate-700 text-sm font-medium mb-1.5">Şifre tekrar</label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Şifre tekrar</label>
                     <input
                       type={setShow ? "text" : "password"}
                       value={setPw2}
@@ -327,20 +329,20 @@ export default function SettingsPage() {
 
           {/* E-posta şifresi var: değiştir */}
           {hasPassword && firebaseReady && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 sm:p-6">
-              <h3 className="text-slate-900 font-medium text-sm mb-1">Şifreyi değiştir</h3>
-              <p className="text-slate-600 text-sm mb-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 dark:border-slate-700 dark:bg-slate-900/40 sm:p-6">
+              <h3 className="mb-1 text-sm font-medium text-slate-900 dark:text-slate-50">Şifreyi değiştir</h3>
+              <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
                 Mevcut şifrenizi doğrulayıp yenisini belirleyin. Firebase ve sunucu birlikte güncellenir.
               </p>
-              <p className="text-xs text-slate-500 mb-4 leading-relaxed">{PASSWORD_POLICY_MESSAGE}</p>
+              <p className="mb-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{PASSWORD_POLICY_MESSAGE}</p>
               <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
                 {chgError && (
-                  <div className="p-3 rounded-lg bg-red-50 border border-red-100 text-red-700 text-sm">
+                  <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                     {chgError}
                   </div>
                 )}
                 <div>
-                  <label className="block text-slate-700 text-sm font-medium mb-1.5">Mevcut şifre</label>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Mevcut şifre</label>
                   <div className="relative">
                     <input
                       type={chgShow ? "text" : "password"}
@@ -354,14 +356,14 @@ export default function SettingsPage() {
                       type="button"
                       aria-label={chgShow ? "Gizle" : "Göster"}
                       onClick={() => setChgShow((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                     >
                       {chgShow ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-slate-700 text-sm font-medium mb-1.5">Yeni şifre</label>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Yeni şifre</label>
                   <input
                     type={chgShow ? "text" : "password"}
                     value={newPw}
@@ -372,7 +374,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 text-sm font-medium mb-1.5">Yeni şifre tekrar</label>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Yeni şifre tekrar</label>
                   <input
                     type={chgShow ? "text" : "password"}
                     value={newPw2}
@@ -385,7 +387,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={chgSubmitting}
-                  className="h-10 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:bg-slate-500 text-white text-sm font-semibold transition-colors"
+                  className="h-10 rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:bg-slate-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:disabled:bg-indigo-900/60"
                 >
                   {chgSubmitting ? "Güncelleniyor…" : "Şifreyi güncelle"}
                 </button>
@@ -393,9 +395,12 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <p className="text-slate-500 text-sm">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Şifrenizi unuttuysanız{" "}
-            <Link href="/forgot-password" className="font-semibold text-indigo-600 hover:text-indigo-700">
+            <Link
+              href="/forgot-password"
+              className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
               sıfırlama
             </Link>{" "}
             sayfasını kullanabilirsiniz (e-posta ile şifre tanımlı hesaplar).

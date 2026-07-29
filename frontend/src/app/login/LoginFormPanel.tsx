@@ -28,47 +28,51 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
   } = vm;
 
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-12">
+    <div className="flex flex-1 items-center justify-center px-6 py-12">
       <div className="w-full max-w-[400px]">
-        <div className="lg:hidden flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center">
+        <div className="mb-12 flex items-center gap-3 lg:hidden">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600">
             <ShoppingCart size={20} className="text-white" />
           </div>
-          <span className="text-slate-900 font-bold text-lg">E-Ticaret</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-white">E-Ticaret</span>
         </div>
 
         <div className="mb-10">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-6">
-            <Lock size={22} className="text-slate-600" />
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+            <Lock size={22} className="text-slate-600 dark:text-slate-300" />
           </div>
-          <h1 className="text-slate-900 text-2xl font-bold tracking-tight">Tekrar hoş geldiniz</h1>
-          <p className="text-slate-500 text-sm mt-1.5">Yönetim paneline erişmek için giriş yapın.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Tekrar hoş geldiniz
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+            Yönetim paneline erişmek için giriş yapın.
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
           {error && (
-            <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-100">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0 mt-1.5" />
-              <p className="text-red-700 text-sm leading-snug">{error}</p>
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 p-3.5 dark:border-red-900/60 dark:bg-red-950/50">
+              <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500" />
+              <p className="text-sm leading-snug text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
 
           {unverifiedEmail && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+            <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
               <div className="flex items-start gap-2.5">
                 <div className="w-1.5 h-1.5 bg-amber-500 rounded-full flex-shrink-0 mt-1.5" />
                 <div>
-                  <p className="text-amber-800 text-sm font-medium leading-snug">
+                  <p className="text-sm font-medium leading-snug text-amber-800 dark:text-amber-200">
                     E-posta adresiniz henüz doğrulanmamış.
                   </p>
-                  <p className="text-amber-700 text-xs mt-0.5">
+                  <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300/90">
                     <span className="font-medium">{unverifiedEmail}</span> adresine gönderilen bağlantıya
                     tıklayın.
                   </p>
                 </div>
               </div>
               {resendSent ? (
-                <p className="text-emerald-700 text-xs font-medium pl-4">
+                <p className="pl-4 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   ✓ Doğrulama bağlantısı yeniden gönderildi.
                 </p>
               ) : (
@@ -76,7 +80,7 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
                   type="button"
                   onClick={handleResendVerification}
                   disabled={resendLoading}
-                  className="ml-4 text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline underline-offset-2 flex items-center gap-1 transition-colors disabled:opacity-50"
+                  className="ml-4 flex items-center gap-1 text-xs font-semibold text-indigo-600 underline underline-offset-2 transition-colors hover:text-indigo-700 disabled:opacity-50 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
                   {resendLoading ? "Gönderiliyor…" : "Doğrulama e-postasını yeniden gönder"}
                 </button>
@@ -85,7 +89,9 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
           )}
 
           <div>
-            <label className="block text-slate-700 text-sm font-medium mb-1.5">E-posta adresi</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              E-posta adresi
+            </label>
             <input
               type="email"
               value={email}
@@ -93,16 +99,16 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
               placeholder="ornek@email.com"
               autoComplete="email"
               disabled={emailLoading}
-              className="w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
+              className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-slate-700 text-sm font-medium">Şifre</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Şifre</label>
               <Link
                 href="/forgot-password"
-                className="text-indigo-600 text-xs font-medium hover:text-indigo-700 transition-colors"
+                className="text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
               >
                 Şifremi unuttum
               </Link>
@@ -115,13 +121,13 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
                 placeholder="••••••••"
                 autoComplete="current-password"
                 disabled={emailLoading}
-                className="w-full h-11 px-3.5 pr-11 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-60"
+                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -146,10 +152,12 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-slate-400 uppercase tracking-wider">veya</span>
+            <span className="bg-white px-3 text-xs uppercase tracking-wider text-slate-400 dark:bg-slate-950">
+              veya
+            </span>
           </div>
         </div>
 
@@ -157,7 +165,7 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
           type="button"
           onClick={handleGoogleLogin}
           disabled={googleLoading || emailLoading}
-          className="w-full h-11 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-60 text-slate-700 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-3 border border-slate-200 shadow-sm"
+          className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:active:bg-slate-800/90"
         >
           {googleLoading ? (
             <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
@@ -184,24 +192,24 @@ export default function LoginFormPanel({ vm }: LoginFormPanelProps) {
           {googleLoading ? "Giriş yapılıyor…" : "Google ile giriş yap"}
         </button>
 
-        <p className="text-center text-slate-500 text-xs mt-4 leading-relaxed px-1">
+        <p className="mt-4 px-1 text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400">
           Google ile kayıt olduysanız, önce Google ile giriş yapın; sağ üstteki{" "}
-          <span className="font-medium text-slate-600">ayarlar</span> simgesinden{" "}
-          <span className="font-medium text-slate-600">Hesap ayarları</span>na gidip şifre oluşturduktan sonra
+          <span className="font-medium text-slate-600 dark:text-slate-300">ayarlar</span> simgesinden{" "}
+          <span className="font-medium text-slate-600 dark:text-slate-300">Hesap ayarları</span>na gidip şifre oluşturduktan sonra
           aynı e-posta ve şifre ile bu formdan da giriş yapabilirsiniz.
         </p>
 
-        <p className="text-center text-sm text-slate-500 mt-8">
+        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
           Hesabınız yok mu?{" "}
           <Link
             href="/register"
-            className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
           >
             Kayıt olun
           </Link>
         </p>
 
-        <p className="text-center text-slate-400 text-xs mt-6">
+        <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
           &copy; {new Date().getFullYear()} E-Ticaret Yönetim Paneli
         </p>
       </div>
