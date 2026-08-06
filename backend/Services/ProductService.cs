@@ -144,6 +144,38 @@ public class ProductService : IProductService
     public async Task<bool> SoftDeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetTrackedActiveByIdAsync(id, cancellationToken);
+        // REVIEW [B3] BUG: ürün yokken `true` dönüyor.
+        //
+        // ProductController.DeleteProduct (line 132+) bu metodu şöyle okuyor:
+        //
+        //     var deleted = await _productService.SoftDeleteAsync(id, ...);
+        //     if (!deleted) return NotFound();
+        //     return NoContent();
+        //
+        // Yani controller `false` görmeyi "ürün yoktu" şeklinde anlıyor; ama
+        // service `true` dönünce "silindi" gibi davranıyor. Sonuç: olmayan
+        // bir ID için DELETE isteği 204 NoContent dönüyor — oysa 404 dönmeli.
+        //
+        // Bu bir "kontrat hatası": method'un dönüş değeri ile çağıranın
+        // beklentisi uyuşmuyor.
+        //
+        // İki çözüm:
+        //
+        //   (a) Hızlı düzeltme — `return true;` → `return false;` yap.
+        //       Boolean kontratı: "true = sildim, false = bulamadım".
+        //
+        //   (b) Daha temiz — boolean yerine enum/Result kullan ki anlam belirsiz
+        //       olmasın:
+        //
+        //           public enum DeleteResult { NotFound, Deleted }
+        //
+        //       Boolean dönüş değeri bir süre sonra "true ne demek?" sorusunu
+        //       yaratır. Birden fazla anlamı olan boolean'lardan kaçın.
+        //
+        // Test yazarken bu tür bug'lar erken yakalanır:
+        //   "Should_Return_NotFound_When_Product_Does_Not_Exist"
+        //
+        // Anahtar kelime: "method contract", "tri-state result".
         if (product is null)
             return true;
 

@@ -107,6 +107,15 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 RegisterServices.AddProductImageStorage(builder);
 
+// REVIEW [A3] Rate limit policy'leri burada tanımlı ama hiçbir endpoint'te
+// uygulanmıyor (`grep "EnableRateLimiting"` boş). Yani brute-force koruma
+// tasarlanmış, devreye girmemiş. AuthController.Login ve ForgotPassword
+// üstüne `[EnableRateLimiting("auth")]` / `[EnableRateLimiting("password-reset")]`
+// attribute'larını ekle. Aksi halde saldırgan dakikada binlerce şifre
+// deneyebilir; şu an hiçbir engel yok.
+//
+// Anahtar kelime: "ASP.NET Core 8 rate limiting middleware [EnableRateLimiting]".
+//
 // Rate limiting — özellikle auth uçları için brute-force koruması
 builder.Services.AddRateLimiter(options =>
 {

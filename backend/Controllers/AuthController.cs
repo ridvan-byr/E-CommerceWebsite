@@ -35,6 +35,29 @@ public class AuthController : ControllerBase
     /// İstek gövdesi: { idToken, name, surname }.
     /// E-posta doğrulama maili gönderir; henüz JWT üretmez.
     /// </summary>
+    // REVIEW [B8] AuthService.RegisterAsync üç farklı hata için `null` dönüyor:
+    //   1. Firebase ID token doğrulanamadı (token geçersiz/expired)
+    //   2. Token e-posta içermiyor (provider gönderememiş)
+    //   3. E-posta zaten kayıtlı
+    //
+    // Üçü farklı hata, ama burada hepsi tek mesajla 409 Conflict'e çevriliyor:
+    //   "Bu e-posta ile kayıtlı bir kullanıcı var ya da kimlik doğrulaması başarısız."
+    //
+    // Sonuç: kullanıcı "neden başarısız?" sorusuna cevap alamıyor; backend
+    // log'una bakmadan debug etmek imkansız. Doğru hata kontratı:
+    //
+    //     public enum RegisterError { None, InvalidToken, EmailMissing, EmailTaken }
+    //     public record RegisterOutcome(RegisterResultDto? Result, RegisterError Error);
+    //
+    // Service `RegisterOutcome` döner, controller hataya göre 401/400/409 ayırır:
+    //   InvalidToken / EmailMissing → 401 Unauthorized
+    //   EmailTaken                  → 409 Conflict
+    //
+    // Bu pattern'e "Result pattern" / "discriminated union" denir; ASP.NET
+    // Core 8 ile birlikte `OneOf` veya `FluentResults` kütüphaneleri de
+    // popüler. Şimdilik basit enum + record yeter.
+    //
+    // Anahtar kelime: "Result pattern C#", "OneOf library", "discriminated union".
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] FirebaseRegisterRequestDto dto, CancellationToken cancellationToken = default)
     {
@@ -48,6 +71,18 @@ public class AuthController : ControllerBase
         return StatusCode(201, result);
     }
 
+    // REVIEW [A3] Login endpoint'i şu an rate limit dışında — saldırgan
+    // dakikada binlerce şifre deneyebilir. Program.cs'de "auth" policy'si
+    // tanımlı; sadece attribute eklemek yeterli:
+    //
+    //     [HttpPost("login")]
+    //     [EnableRateLimiting("auth")]
+    //     public async Task<IActionResult> Login(...) { ... }
+    //
+    // Aynısı firebase-login için de, "password-reset" ise forgot-password
+    // ve resend-verification için. Class seviyesinde varsayılan policy
+    // belirleyip exception'ları [DisableRateLimiting] ile ayırmak da
+    // alternatif (`/me`, `/logout` gibi).
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto, CancellationToken cancellationToken = default)
     {

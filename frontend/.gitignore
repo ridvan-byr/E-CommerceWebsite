@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# REVIEW [F2] .env.local.example commit'lenebilmeli (içinde sadece anahtar
+# adları var, gerçek değer yok). Aşağıdaki istisna pattern'i bunu sağlar.
+!.env*.example
 
 # vercel
 .vercel

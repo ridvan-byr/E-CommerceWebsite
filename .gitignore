@@ -9,6 +9,40 @@
 backend/Secrets/
 # Local build output (never commit DLLs, PDBs, or copied secrets)
 backend/out-build/
+
+# REVIEW [E1] Bu iki klasör şu an repo'ya commit'lenmiş ve toplam ~50 MB
+# DLL içeriyor (`git ls-files backend/_build_check | wc -l` → 60+). Bunlar
+# build artifact'ı; her klonlamada tekrar indirmek anlamsız.
+#
+# Yapılacaklar (sırayla):
+#   1. Aşağıdaki iki satır .gitignore'a girdiği için yeni eklemeler artık
+#      tracked olmayacak — ama mevcut kayıtlar git tarafından izlenmeye
+#      devam ediyor.
+#   2. Repo'dan kaldır:
+#        git rm -r --cached backend/_build_check backend/_verify_build
+#        git rm --cached frontend/i.webp
+#        git commit -m "chore: stop tracking build artifacts and stray files"
+#   3. Klasörleri local'de istersen sil, istersen tut — artık ignored.
+#
+# Genel kural: build çıktıları (bin/, obj/, dist/, build/, *.dll, *.pdb)
+# asla commit'lenmez. .gitignore disiplini bir kez kazanılınca otomatik
+# olur; her yeni klasörde "bu üretiliyor mu?" sorusunu sorman yeter.
+#
+# Anahtar kelime: "git rm cached", ".gitignore best practices".
+backend/_build_check/
+backend/_verify_build/
+
+# REVIEW [E2] Bu dosya proje kökünde "frontend/i.webp" olarak duruyor —
+# kullanılan bir asset olsaydı `frontend/public/` altında olurdu. Büyük
+# ihtimal yanlışlıkla commit'lendi. Public klasöründe kullanılmıyorsa
+# `git rm --cached frontend/i.webp` ile kaldır.
+#
+# Genel ipucu: `git status` çıktısında "?? frontend/i.webp" gibi bir şey
+# gördüğünde dosyayı `git add` etmeden önce "buraya neden geldi, hangi
+# klasöre ait?" diye sor. Bilinçsiz `git add .` yapmaktan kaçın; bunun
+# yerine sadece değişen dosyaları ekle.
+frontend/i.webp
+
 # Logs / env (keep secrets out of git)
 *.log
 .env

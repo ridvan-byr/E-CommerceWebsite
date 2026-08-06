@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
 
+// REVIEW [A2] Bu controller da [Authorize] olmadan açık. Ayrıntılı tartışma
+// için ProductController.cs üstündeki A2/A4 review yorumuna bak.
 [ApiController]
 [Route("api/features")]
 public class FeatureController : ControllerBase

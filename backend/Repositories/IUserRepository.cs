@@ -2,6 +2,36 @@ using backend.Models;
 
 namespace backend.Repositories;
 
+// REVIEW [C2] Bu interface'de aynı sorgu için tracking/no-tracking ikilisi var:
+//
+//   GetByIdAsync          / GetByIdTrackingAsync
+//   GetByEmailAsync       / GetByEmailTrackingAsync
+//   GetByFirebaseUidAsync / GetByFirebaseUidTrackingAsync
+//
+// = 6 metod. Her yeni filtre eklendiğinde 2 metod eklemek zorundasın. Daha
+// temizi: tek metod + opsiyonel `bool tracking = false` parametresi.
+//
+//     Task<User?> GetByEmailAsync(
+//         string normalizedEmail,
+//         bool tracking = false,
+//         CancellationToken cancellationToken = default);
+//
+// Implementation:
+//
+//     var query = _context.Users.AsQueryable();
+//     if (!tracking) query = query.AsNoTracking();
+//     return await query.FirstOrDefaultAsync(...);
+//
+// Avantaj: interface küçülür, repository implementation tek satır
+// genişler, çağıranın niyeti açıkça görünür:
+//
+//     var user = await _userRepository.GetByEmailAsync(email, tracking: true, ct);
+//
+// Bu küçük bir refactor ama "interface büyürse her tarafa yayılır" sezgisini
+// erken kazanmak çok değerli. Interface ne kadar büyürse, mock'lamak ve
+// gelecekte değiştirmek o kadar zorlaşır (Interface Segregation — SOLID-I).
+//
+// Anahtar kelime: "EF Core AsNoTracking", "Interface Segregation Principle".
 public interface IUserRepository
 {
     Task<User?> GetByIdAsync(int userId, CancellationToken cancellationToken = default);

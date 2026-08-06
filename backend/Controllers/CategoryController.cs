@@ -6,6 +6,9 @@ using backend.Services;
 
 namespace backend.Controllers;
 
+// REVIEW [A2] Bu controller da [Authorize] olmadan açık. Yazma uçlarına
+// (POST/PUT/DELETE) auth gerekiyor. Ayrıntılı tartışma için
+// ProductController.cs üstündeki A2/A4 review yorumuna bak.
 [ApiController]
 [Route("api/categories")]
 public class CategoryController : ControllerBase
